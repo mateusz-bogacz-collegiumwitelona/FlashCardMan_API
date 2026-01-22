@@ -1,4 +1,5 @@
-﻿using DTO.Response;
+﻿using Data.Models;
+using DTO.Response;
 
 namespace Data.Interfaces
 {
@@ -6,5 +7,7 @@ namespace Data.Interfaces
     {
         Task<bool> AddNewDeckAsync(string name, string description);
         Task<List<GetDeckResponse>> GetAllDecksAsync();
+        Task<Deck> FindDeckAsync(string token);
+        Task<bool> EditDeckAsync(string token, string? name, string? description);
     }
 }

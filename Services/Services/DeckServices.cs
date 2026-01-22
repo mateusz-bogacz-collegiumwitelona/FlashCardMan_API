@@ -71,5 +71,59 @@ namespace Services.Services
                     new List<string> { ex.Message });
             }
         }
+
+        public async Task<ResultHandler<string>> EditDeckAsync(EditDeckRequest request)
+        {
+            try
+            {
+                var isExist = await _deckRepo.FindDeckAsync(request.Token);
+
+                if (isExist == null)
+                {
+                    return ResultHandler<string>.Failure(
+                        "Deck not found.",
+                        StatusCodes.Status404NotFound,
+                        new List<string> { "DeckNotFound" });
+                }
+
+                if (string.IsNullOrEmpty(request.Name) && string.IsNullOrEmpty(request.Description))
+                {
+                    return ResultHandler<string>.Failure(
+                        "No fields to update.",
+                        StatusCodes.Status400BadRequest,
+                        new List<string> { "NoUpdateFields" });
+                }
+
+                if (request.Name == isExist.Name && request.Description == isExist.Description)
+                {
+                    return ResultHandler<string>.Failure(
+                        "No changes detected.",
+                        StatusCodes.Status400BadRequest,
+                        new List<string> { "NoChangesDetected" });
+                }
+
+                var result = await _deckRepo.EditDeckAsync(request.Token, request.Name, request.Description);
+
+                if (!result)
+                {
+                    return ResultHandler<string>.Failure(
+                        "Failed to update deck.",
+                        StatusCodes.Status500InternalServerError,
+                        new List<string> { "CannotUpdateDeck" });
+                }
+
+                return ResultHandler<string>.Success(
+                    "Deck updated successfully.",
+                    StatusCodes.Status200OK,
+                    null);
+            }
+            catch (Exception ex)
+            {
+                return ResultHandler<string>.Failure(
+                    "An error occurred while updating the deck.",
+                    StatusCodes.Status500InternalServerError,
+                    new List<string> { ex.Message });
+            }
+        }
     }
 }

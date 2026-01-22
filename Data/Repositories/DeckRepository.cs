@@ -1,6 +1,7 @@
 ﻿using Data.Context;
 using Data.Helpers;
 using Data.Interfaces;
+using Data.Models;
 using DTO.Response;
 using Microsoft.EntityFrameworkCore;
 
@@ -41,6 +42,27 @@ namespace Data.Repositories
                 Description = deck.Description,
                 Token = deck.Token
             }).ToList();
+        }
+
+        public async Task<Deck> FindDeckAsync(string token)
+            => await _dbContext.Decks.FirstOrDefaultAsync(d => d.Token == token);
+        
+        public async Task<bool> EditDeckAsync(string token, string? name, string? description)
+        {
+            var deck =  await _dbContext.Decks.FirstOrDefaultAsync(d => d.Token == token);
+
+            if (!string.IsNullOrEmpty(name))
+                deck.Name = name;
+
+            if (!string.IsNullOrEmpty(description))
+                deck.Description = description;
+
+            deck.UpdatedAt = DateTime.UtcNow;
+
+            _dbContext.Decks.Update(deck);
+
+            var result = await _dbContext.SaveChangesAsync();
+            return result > 0;
         }
     }
 }
