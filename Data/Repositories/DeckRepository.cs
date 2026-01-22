@@ -64,5 +64,14 @@ namespace Data.Repositories
             var result = await _dbContext.SaveChangesAsync();
             return result > 0;
         }
+
+        public async Task<bool> DeleteDeckAsync(Deck deck)
+        {
+            _dbContext.Decks.Remove(deck);
+
+            var result = await _dbContext.SaveChangesAsync();
+
+            return result > 0;
+        }
     }
 }

@@ -9,5 +9,6 @@ namespace Data.Interfaces
         Task<List<GetDeckResponse>> GetAllDecksAsync();
         Task<Deck> FindDeckAsync(string token);
         Task<bool> EditDeckAsync(string token, string? name, string? description);
+        Task<bool> DeleteDeckAsync(Deck deck);
     }
 }

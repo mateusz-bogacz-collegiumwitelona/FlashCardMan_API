@@ -125,5 +125,51 @@ namespace Services.Services
                     new List<string> { ex.Message });
             }
         }
+
+        public async Task<ResultHandler<string>> DeleteDeckAsync(string token)
+        {
+            try
+            {
+                if (string.IsNullOrEmpty(token))
+                {
+                    return ResultHandler<string>.Failure(
+                        "No token.",
+                        StatusCodes.Status400BadRequest,
+                        new List<string> { "NoToken" });
+                }
+
+                var isExist = await _deckRepo.FindDeckAsync(token);
+
+                if (isExist == null)
+                {
+                    return ResultHandler<string>.Failure(
+                        "Deck not found.",
+                        StatusCodes.Status404NotFound,
+                        new List<string> { "DeckNotFound" });
+                }
+
+                var result = await _deckRepo.DeleteDeckAsync(isExist);
+
+                if (!result)
+                {
+                    return ResultHandler<string>.Failure(
+                        "Failed to delete deck.",
+                        StatusCodes.Status500InternalServerError,
+                        new List<string> { "CannotDeleteDeck" });
+                }
+
+                return ResultHandler<string>.Success(
+                    "Deck deleted successfully.",
+                    StatusCodes.Status200OK,
+                    null);
+            } 
+            catch (Exception ex)
+            {
+                return ResultHandler<string>.Failure(
+                    "An error occurred while updating the deck.",
+                    StatusCodes.Status500InternalServerError,
+                    new List<string> { ex.Message });
+            }
+        }
     }
 }

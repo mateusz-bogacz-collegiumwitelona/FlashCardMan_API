@@ -1,5 +1,6 @@
 ﻿using DTO.Request;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore.Query.Internal;
 using Services.Interfaces;
 
 namespace API.Controllers
@@ -178,6 +179,64 @@ namespace API.Controllers
         {
             var result = await _deckServices.EditDeckAsync(request);
             
+            return result.IsSuccess
+                ? StatusCode(result.StatusCode, result.Data)
+                : StatusCode(result.StatusCode, new
+                {
+                    success = false,
+                    message = result.Message,
+                    errors = result.Errors
+                });
+        }
+
+        /// <summary>
+        /// Deletes a specific card deck based on its token.
+        /// </summary>
+        /// <remarks>
+        /// Performs a permanent deletion of a deck. A valid token must be provided as a query parameter.
+        /// 
+        /// Example successful request:
+        /// ```json
+        /// DELETE /api/deck/delete?token=_n7XucasIDb8TyEofP4FTA
+        /// ```
+        /// Example success response:
+        /// ```json
+        /// {
+        ///   "success": true,
+        ///   "message": "Deck deleted successfully."
+        /// }
+        /// ```
+        /// 
+        /// Example error request (deck not found):
+        /// ```json
+        /// DELETE /api/deck/delete?token=INVALID_TOKEN_XXX
+        /// ```
+        /// Example error response (Not Found):
+        /// ```json
+        /// {
+        ///   "success": false,
+        ///   "message": "Deck not found.",
+        ///   "errors": [
+        ///     "DeckNotFound"
+        ///   ]
+        /// }
+        /// ```
+        /// </remarks>
+        /// <param name="token">The unique security token identifying the deck to be deleted. Passed as a query string parameter.</param>
+        /// <returns>A JSON object indicating success or failure of the deletion operation.</returns>
+        /// <response code="200">The deck was deleted successfully.</response>
+        /// <response code="400">The token parameter was missing or empty.</response>
+        /// <response code="404">The deck with the provided token was not found.</response>
+        /// <response code="500">An internal server error occurred while trying to delete the deck from the database.</response>
+        [HttpDelete("delete")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+        public async Task<IActionResult> DeleteDeckAsync([FromQuery] string token)
+        {
+            var result = await _deckServices.DeleteDeckAsync(token);
+
             return result.IsSuccess
                 ? StatusCode(result.StatusCode, new
                 {

@@ -9,5 +9,6 @@ namespace Services.Interfaces
         Task<ResultHandler<string>> CreateDeckAsync(AddNewDeckRequest request);
         Task<ResultHandler<List<GetDeckResponse>>> GetAllDecksAsync();
         Task<ResultHandler<string>> EditDeckAsync(EditDeckRequest request);
+        Task<ResultHandler<string>> DeleteDeckAsync(string token);
     }
 }
