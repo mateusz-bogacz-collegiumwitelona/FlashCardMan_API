@@ -1,5 +1,9 @@
 using Data.Context;
+using Data.Interfaces;
+using Data.Repositories;
 using Microsoft.EntityFrameworkCore;
+using Services.Interfaces;
+using Services.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -16,6 +20,13 @@ builder.Services.AddSwaggerGen();
 // add db context
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
+
+
+//register repo
+builder.Services.AddScoped<IDeckRepository, DeckRepository>();
+
+//register services
+builder.Services.AddScoped<IDeckServices, DeckServices>();
 
 var app = builder.Build();
 

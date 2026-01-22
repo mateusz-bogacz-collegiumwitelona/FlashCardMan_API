@@ -2,10 +2,13 @@
 {
     public class FlashCards
     {
-        public int Id { get; set; }
+        public Guid Id { get; set; }
         public string Question { get; set; }
         public string Answer { get; set; }
         public DateTime CreatedAt { get; set; }
         public DateTime UpdatedAt { get; set; }
+        public Guid DeckId { get; set; }
+        public Deck Deck { get; set; }
+        public string Token { get; set; }
     }
 }
