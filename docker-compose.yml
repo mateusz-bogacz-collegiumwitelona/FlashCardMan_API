@@ -1,0 +1,81 @@
+networks:
+  dev:
+    driver: bridge
+
+volumes:
+  shared-data: {}
+  db-data: {}
+  redis-data: {}
+
+services:
+  api:
+    container_name: flashcardman_api
+    image: ${DOCKER_REGISTRY-}api
+    build:
+      context: .
+      dockerfile: API/Dockerfile
+    volumes:
+      - shared-data:/data
+    ports:
+      - "${API_PORT:-5111}:8080"
+    depends_on:
+      - postgres
+      - redis
+    networks:
+      - dev
+    environment:
+      - ConnectionStrings__DefaultConnection=User ID=${POSTGRES_USER};Password=${POSTGRES_PASSWORD};Host=${POSTGRES_HOST};Port=${POSTGRES_PORT};Database=${POSTGRES_DB};
+      - Redis__Host=${REDIS_HOST}
+      - Redis__Port=${REDIS_PORT}
+
+  postgres:
+    image: postgres:18
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U ${POSTGRES_USER} -h ${POSTGRES_PORT} -d ${POSTGRES_DB}",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    volumes:
+      - db-data:/var/lib/postgresql
+    ports:
+      - "${POSTGRES_PORT:-5433}:5432"
+    networks:
+      - dev
+    restart: unless-stopped
+
+  mailpit:
+    image: axllent/mailpit:v1.27.9
+    container_name: mailpit-dev
+    hostname: mailpit
+    ports:
+      - "${MAILPIT_PORT:-63854}:8025"
+      - "1025:1025"
+    networks:
+      - dev
+    restart: unless-stopped
+
+  redis:
+    image: redis:8.4.0
+    container_name: flashcardman_redis
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    networks:
+      - dev
+    restart: unless-stopped
+    volumes:
+      - redis-data:/data
