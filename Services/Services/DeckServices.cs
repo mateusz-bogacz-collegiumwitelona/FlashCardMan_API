@@ -1,5 +1,6 @@
 ﻿using Data.Interfaces;
 using DTO.Request;
+using DTO.Response;
 using Microsoft.AspNetCore.Http;
 using Services.Helpers;
 using Services.Interfaces;
@@ -43,5 +44,32 @@ namespace Services.Services
             }
         }
 
+        public async Task<ResultHandler<List<GetDeckResponse>>> GetAllDecksAsync()
+        {
+            try
+            {
+                var decks = await _deckRepo.GetAllDecksAsync();
+
+                if (decks == null || !decks.Any())
+                {
+                    return ResultHandler<List<GetDeckResponse>>.Failure(
+                        "No decks found.",
+                        StatusCodes.Status404NotFound,
+                        new List<string> { "NoDecksAvailable" });
+                }
+
+                return ResultHandler<List<GetDeckResponse>>.Success(
+                    "Decks retrieved successfully.",
+                    StatusCodes.Status200OK,
+                    decks);
+            }
+            catch (Exception ex)
+            {
+                return ResultHandler<List<GetDeckResponse>>.Failure(
+                    "An error occurred while retrieving decks.",
+                    StatusCodes.Status500InternalServerError,
+                    new List<string> { ex.Message });
+            }
+        }
     }
 }

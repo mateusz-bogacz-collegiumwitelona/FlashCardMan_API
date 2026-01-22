@@ -1,6 +1,8 @@
 ﻿using Data.Context;
 using Data.Helpers;
 using Data.Interfaces;
+using DTO.Response;
+using Microsoft.EntityFrameworkCore;
 
 namespace Data.Repositories
 {
@@ -27,6 +29,18 @@ namespace Data.Repositories
             await _dbContext.Decks.AddAsync(newDeck);
             var result = await _dbContext.SaveChangesAsync();
             return result > 0;
+        }
+
+        public async Task<List<GetDeckResponse>> GetAllDecksAsync()
+        {
+            var decks = await _dbContext.Decks.ToListAsync();
+
+            return decks.Select(deck => new GetDeckResponse
+            {
+                Name = deck.Name,
+                Description = deck.Description,
+                Token = deck.Token
+            }).ToList();
         }
     }
 }
