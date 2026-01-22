@@ -24,7 +24,7 @@ services:
     networks:
       - dev
     environment:
-      - ConnectionStrings__DefaultConnection=User ID=${POSTGRES_USER};Password=${POSTGRES_PASSWORD};Host=${POSTGRES_HOST};Port=${POSTGRES_PORT};Database=${POSTGRES_DB};
+      - ConnectionStrings__DefaultConnection=Host=${POSTGRES_HOST};Port=${POSTGRES_PORT};Database=${POSTGRES_DB};Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD}
       - Redis__Host=${REDIS_HOST}
       - Redis__Port=${REDIS_PORT}
       - ASPNETCORE_URLS=http://+:8080
@@ -39,7 +39,7 @@ services:
       test:
         [
           "CMD-SHELL",
-          "pg_isready -U ${POSTGRES_USER} -h ${POSTGRES_PORT} -d ${POSTGRES_DB}",
+          "pg_isready -U ${POSTGRES_USER} -h ${POSTGRES_HOST} -d ${POSTGRES_DB}",
         ]
       interval: 10s
       timeout: 5s
