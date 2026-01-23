@@ -38,9 +38,11 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
 
 //register repo
 builder.Services.AddScoped<IDeckRepository, DeckRepository>();
+builder.Services.AddScoped<IFlashCardRepo, FlashCardRepo>();
 
 //register services
 builder.Services.AddScoped<IDeckServices, DeckServices>();
+builder.Services.AddScoped<IFlashCardService, FlashCardService>();
 
 var app = builder.Build();
 
