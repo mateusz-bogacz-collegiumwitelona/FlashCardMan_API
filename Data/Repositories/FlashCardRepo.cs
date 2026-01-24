@@ -3,6 +3,7 @@ using Data.Helpers;
 using Data.Interfaces;
 using Data.Models;
 using DTO.Request;
+using Microsoft.EntityFrameworkCore;
 
 namespace Data.Repositories
 {
@@ -40,6 +41,26 @@ namespace Data.Repositories
             var result = await _dbContext.SaveChangesAsync();
 
             return result > 0 ? "Cards added successfully" : null;
+        }
+
+        public async Task<bool> IsCardExistAsync(string token)
+            => await _dbContext.FlashCards.AnyAsync(fc => fc.Token == token);
+
+        public async Task<bool> EditCardAsync(string cardToken, string? question, string? answare)
+        {
+            var card = await _dbContext.FlashCards.FirstOrDefaultAsync(fc => fc.Token == cardToken);
+
+            if (card == null) return false;
+
+            if (!string.IsNullOrEmpty(question)) card.Question = question;
+            if (!string.IsNullOrEmpty(answare)) card.Question = answare;
+
+            card.UpdatedAt = DateTime.UtcNow;
+
+            _dbContext.FlashCards.Update(card);
+
+            var result = await _dbContext.SaveChangesAsync();
+            return result > 0;
         }
     }
 }

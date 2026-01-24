@@ -62,5 +62,55 @@ namespace Services.Services
                     new List<string> { ex.Message });
             }
         }
+
+        public async Task<ResultHandler<bool>> EditCardAsync(string cardToken, string? question, string? answare)
+        {
+            try
+            {
+                bool isCardExist = await _flashCardRepo.IsCardExistAsync(cardToken);
+
+                if (!isCardExist)
+                {
+                    return ResultHandler<bool>.Failure(
+                        "Card not found",
+                        StatusCodes.Status404NotFound,
+                        new List<string> { "CardNotFound" } 
+                        );
+                }
+
+                if (
+                    (string.IsNullOrEmpty(question) && string.IsNullOrEmpty(answare)) || 
+                    (string.IsNullOrWhiteSpace(question) && string.IsNullOrWhiteSpace(answare))
+                    )
+                {
+                    return ResultHandler<bool>.Failure(
+                        "No fields to update.",
+                        StatusCodes.Status400BadRequest,
+                        new List<string> { "NoUpdateFields" });
+                }
+
+                bool result = await _deckRepo.EditDeckAsync(cardToken, question, answare);
+
+                if (!result)
+                {
+                    return ResultHandler<bool>.Failure(
+                       "Failed to edit card to the deck.",
+                       StatusCodes.Status500InternalServerError,
+                       new List<string> { "EditCardsFailed" });
+                }
+
+                return ResultHandler<bool>.Success(
+                    "Card edit successfully.",
+                    StatusCodes.Status200OK,
+                    true);
+            }
+            catch (Exception ex)
+            {
+                return ResultHandler<bool>.Failure(
+                    "An error occurred while adding cards to the deck.",
+                    StatusCodes.Status500InternalServerError,
+                    new List<string> { ex.Message });
+            }
+        }
     }
 }
