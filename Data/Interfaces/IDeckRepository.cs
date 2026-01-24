@@ -10,5 +10,7 @@ namespace Data.Interfaces
         Task<Deck> FindDeckAsync(string token);
         Task<bool> EditDeckAsync(string token, string? name, string? description);
         Task<bool> DeleteDeckAsync(Deck deck);
+        Task<List<GetCardsForDeckResponse>> GetDeckCardsAsync(string token);
+        Task<bool> IsDeckExist(string token);
     }
 }

@@ -73,5 +73,22 @@ namespace Data.Repositories
 
             return result > 0;
         }
+
+        public async Task<List<GetCardsForDeckResponse>> GetDeckCardsAsync(string token)
+            => await _dbContext.Decks
+                .Where(d => d.Token == token)
+                .Include(d => d.FlashCards)
+                .SelectMany(d => d.FlashCards.Select(fc => new GetCardsForDeckResponse
+                {
+                    Question = fc.Question,
+                    Answer = fc.Answer,
+                    CreatedAt = fc.CreatedAt,
+                    UpdatedAt = fc.UpdatedAt,
+                    Token = fc.Token
+                }))
+            .ToListAsync();
+
+        public async Task<bool> IsDeckExist(string token)
+            => await _dbContext.Decks.AnyAsync(d => d.Token == token);
     }
 }

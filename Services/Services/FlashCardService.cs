@@ -89,7 +89,7 @@ namespace Services.Services
                         new List<string> { "NoUpdateFields" });
                 }
 
-                bool result = await _deckRepo.EditDeckAsync(cardToken, question, answare);
+                bool result = await _flashCardRepo.EditCardAsync(cardToken, question, answare);
 
                 if (!result)
                 {

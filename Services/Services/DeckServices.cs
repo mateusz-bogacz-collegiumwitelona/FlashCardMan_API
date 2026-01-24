@@ -76,9 +76,9 @@ namespace Services.Services
         {
             try
             {
-                var isExist = await _deckRepo.FindDeckAsync(request.Token);
+                var isExist = await _deckRepo.IsDeckExist(request.Token);
 
-                if (isExist == null)
+                if (!isExist)
                 {
                     return ResultHandler<string>.Failure(
                         "Deck not found.",
@@ -94,7 +94,9 @@ namespace Services.Services
                         new List<string> { "NoUpdateFields" });
                 }
 
-                if (request.Name == isExist.Name && request.Description == isExist.Description)
+                var deck = await _deckRepo.FindDeckAsync(request.Token);
+
+                if (request.Name == deck.Name && request.Description == deck.Description)
                 {
                     return ResultHandler<string>.Failure(
                         "No changes detected.",
@@ -166,6 +168,52 @@ namespace Services.Services
             catch (Exception ex)
             {
                 return ResultHandler<string>.Failure(
+                    "An error occurred while updating the deck.",
+                    StatusCodes.Status500InternalServerError,
+                    new List<string> { ex.Message });
+            }
+        }
+
+        public async Task<ResultHandler<List<GetCardsForDeckResponse>>> GetDeckCardsAsync(string token)
+        {
+            try
+            {
+                if (string.IsNullOrEmpty(token))
+                {
+                    return ResultHandler<List<GetCardsForDeckResponse>>.Failure(
+                        "No token.",
+                        StatusCodes.Status400BadRequest,
+                        new List<string> { "NoToken" });
+                }
+
+                bool isExist = await _deckRepo.IsDeckExist(token);
+
+                if (!isExist)
+                {
+                    return ResultHandler<List<GetCardsForDeckResponse>>.Failure(
+                        "Deck not found.",
+                        StatusCodes.Status404NotFound,
+                        new List<string> { "DeckNotFound" });
+                }
+
+                var result = await _deckRepo.GetDeckCardsAsync(token);
+
+                if (result == null || !result.Any())
+                {
+                    return ResultHandler<List<GetCardsForDeckResponse>>.Failure(
+                        "Cards in deck not found.",
+                        StatusCodes.Status404NotFound,
+                        new List<string> { "CardsNotFound" });
+                }
+
+                return ResultHandler<List<GetCardsForDeckResponse>>.Success(
+                    "Carnd in deck reviewed successfuly.",
+                    StatusCodes.Status200OK,
+                    result);
+            }
+            catch (Exception ex)
+            {
+                return ResultHandler<List<GetCardsForDeckResponse>>.Failure(
                     "An error occurred while updating the deck.",
                     StatusCodes.Status500InternalServerError,
                     new List<string> { ex.Message });

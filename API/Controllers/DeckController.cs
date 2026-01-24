@@ -1,6 +1,5 @@
 ﻿using DTO.Request;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore.Query.Internal;
 using Services.Interfaces;
 
 namespace API.Controllers
@@ -249,6 +248,26 @@ namespace API.Controllers
                     message = result.Message,
                     errors = result.Errors
                 });
+        }
+
+        [HttpGet("cards")]
+        public async Task<IActionResult> GetDeckCardsAsync([FromQuery]string token)
+        {
+            var result = await _deckServices.GetDeckCardsAsync(token);
+
+            return result.IsSuccess
+               ? StatusCode(result.StatusCode, new
+               {
+                   success = true,
+                   message = result.Message,
+                   data = result.Data
+               })
+               : StatusCode(result.StatusCode, new
+               {
+                   success = false,
+                   message = result.Message,
+                   errors = result.Errors
+               });
         }
     }
 }
