@@ -102,13 +102,14 @@ namespace API.Controllers
         /// <response code="200">Successfully retrieved the list of decks.</response>
         /// <response code="404">No decks found in the database.</response>
         /// <response code="500">An internal server error occurred while retrieving data.</response>
-        [HttpGet("all")]
+        [HttpGet("")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         public async Task<IActionResult> GetAllDecks()
         {
-            var result = await _deckServices.GetAllDecksAsync();
+            var (userEmail, error) = GetAuthenticatedUser();
+            var result = await _deckServices.GetAllDecksAsync(userEmail);
             
             return result.IsSuccess
                 ? StatusCode(result.StatusCode, new

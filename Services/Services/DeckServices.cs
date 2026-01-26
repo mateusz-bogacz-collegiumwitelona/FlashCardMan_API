@@ -58,11 +58,20 @@ namespace Services.Services
             }
         }
 
-        public async Task<ResultHandler<List<GetDeckResponse>>> GetAllDecksAsync()
+        public async Task<ResultHandler<List<GetDeckResponse>>> GetAllDecksAsync(string userEmail)
         {
             try
             {
-                var decks = await _deckRepo.GetAllDecksAsync();
+                var user = await _userManager.FindByEmailAsync(userEmail);
+                if (user == null)
+                {
+                    return ResultHandler<List<GetDeckResponse>>.Failure(
+                        "User not foud",
+                        StatusCodes.Status404NotFound
+                        );
+                }
+
+                var decks = await _deckRepo.GetAllDecksAsync(user.Id);
 
                 if (decks == null || !decks.Any())
                 {

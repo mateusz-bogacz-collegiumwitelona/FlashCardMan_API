@@ -7,7 +7,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Data.Repositories
 {
-    public class DeckRepository : TokenCreator, IDeckRepository 
+    public class DeckRepository : TokenCreator, IDeckRepository
     {
         private readonly ApplicationDbContext _dbContext;
         public DeckRepository(ApplicationDbContext dbContext)
@@ -33,24 +33,24 @@ namespace Data.Repositories
             return result > 0;
         }
 
-        public async Task<List<GetDeckResponse>> GetAllDecksAsync()
-        {
-            var decks = await _dbContext.Decks.ToListAsync();
+        public async Task<List<GetDeckResponse>> GetAllDecksAsync(Guid userId)
+            => await _dbContext.Decks
+                    .Include(d => d.User)
+                    .Where(d => d.User.Id == userId)
+                    .Select(d => new GetDeckResponse
+                    {
+                        Name = d.Name,
+                        Description = d.Description,
+                        Token = d.Token
+                    }).ToListAsync();
 
-            return decks.Select(deck => new GetDeckResponse
-            {
-                Name = deck.Name,
-                Description = deck.Description,
-                Token = deck.Token
-            }).ToList();
-        }
 
         public async Task<Deck> FindDeckAsync(string token)
             => await _dbContext.Decks.FirstOrDefaultAsync(d => d.Token == token);
-        
+
         public async Task<bool> EditDeckAsync(string token, string? name, string? description)
         {
-            var deck =  await _dbContext.Decks.FirstOrDefaultAsync(d => d.Token == token);
+            var deck = await _dbContext.Decks.FirstOrDefaultAsync(d => d.Token == token);
 
             if (!string.IsNullOrEmpty(name))
                 deck.Name = name;
@@ -91,5 +91,6 @@ namespace Data.Repositories
 
         public async Task<bool> IsDeckExist(string token)
             => await _dbContext.Decks.AnyAsync(d => d.Token == token);
+
     }
 }
