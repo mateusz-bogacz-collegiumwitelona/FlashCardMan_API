@@ -3,18 +3,103 @@ using Data.Interfaces;
 using Data.Models;
 using Data.Repositories;
 using Data.Seed;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Authorization;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using Services.Interfaces;
 using Services.Services;
 using System.Reflection;
+using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
 
-builder.Services.AddControllers();
+var jwtSettings = builder.Configuration.GetSection("JWT");
+var key = Encoding.UTF8.GetBytes(jwtSettings["KEY"]);
+
+builder.Services.AddAuthentication(options =>
+{
+    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+})
+.AddJwtBearer(options =>
+{
+    options.TokenValidationParameters = new TokenValidationParameters
+    {
+        ValidateIssuer = true,
+        ValidateAudience = true,
+        ValidateLifetime = true,
+        ValidateIssuerSigningKey = true,
+        ValidIssuer = jwtSettings["ISSUER"],
+        ValidAudience = jwtSettings["AUDIENCE"],
+        IssuerSigningKey = new SymmetricSecurityKey(key),
+        ClockSkew = TimeSpan.Zero
+    };
+
+    options.Events = new JwtBearerEvents
+    {
+        OnMessageReceived = context =>
+        {
+            if (context.Request.Cookies.ContainsKey("JWT"))
+            {
+                context.Token = context.Request.Cookies["JWT"];
+            }
+            else if (context.Request.Headers.ContainsKey("Authorization"))
+            {
+                var authHeader = context.Request.Headers["Authorization"].ToString();
+                if (authHeader.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase))
+                {
+                    context.Token = authHeader.Substring("Bearer ".Length).Trim();
+                }
+            }
+
+            return Task.CompletedTask;
+        },
+        OnTokenValidated = context =>
+        {
+            return Task.CompletedTask;
+        },
+        OnAuthenticationFailed = context =>
+        {
+            return Task.CompletedTask;
+        }
+    };
+});
+
+
+builder.Services.AddControllers(op =>
+{
+    var policy = new AuthorizationPolicyBuilder()
+                    .RequireAuthenticatedUser()
+                    .Build();
+
+    op.Filters.Add(new AuthorizeFilter(policy));
+})
+.ConfigureApiBehaviorOptions(op =>
+{
+    op.InvalidModelStateResponseFactory = context =>
+    {
+        var errors = context.ModelState
+        .Where(e => e.Value.Errors.Count > 0)
+        .SelectMany(e => e.Value.Errors)
+        .Select(e => e.ErrorMessage)
+        .ToList();
+
+        var response = new
+        {
+            success = false,
+            message = "Validation error",
+            errors = errors
+        };
+
+        return new BadRequestObjectResult(response);
+    };
+});
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();
 
@@ -29,10 +114,36 @@ builder.Services.AddSwaggerGen(options =>
         Description = "API to stupid clon of Anki",
     });
 
+    options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+    {
+        Name = "Authorization",
+        Type = SecuritySchemeType.Http,
+        Scheme = "Bearer",
+        BearerFormat = "JWT",
+        In = ParameterLocation.Header,
+        Description = "JWT Authorization header using the Bearer scheme."
+    });
+
+    options.AddSecurityRequirement(new OpenApiSecurityRequirement
+    {
+        {
+            new OpenApiSecurityScheme
+            {
+                Reference = new OpenApiReference
+                {
+                    Type = ReferenceType.SecurityScheme,
+                    Id = "Bearer"
+                }
+            },
+            Array.Empty<string>()
+        }
+    });
+
     var xmlFile = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
     var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
     options.IncludeXmlComments(xmlPath, includeControllerXmlComments: true);
 });
+
 
 // add db context
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
@@ -43,9 +154,24 @@ builder.Services.AddIdentity<ApplicationUser, IdentityRole<Guid>>()
     .AddEntityFrameworkStores<ApplicationDbContext>()
     .AddDefaultTokenProviders();
 
+builder.Services.ConfigureApplicationCookie(options =>
+{
+    options.Events.OnRedirectToLogin = context =>
+    {
+        context.Response.StatusCode = StatusCodes.Status401Unauthorized;
+        return Task.CompletedTask;
+    };
+    options.Events.OnRedirectToAccessDenied = context =>
+    {
+        context.Response.StatusCode = StatusCodes.Status403Forbidden;
+        return Task.CompletedTask;
+    };
+});
+
 //register repo
 builder.Services.AddScoped<IDeckRepository, DeckRepository>();
 builder.Services.AddScoped<IFlashCardRepo, FlashCardRepo>();
+builder.Services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
 
 //register services
 builder.Services.AddScoped<IDeckServices, DeckServices>();
@@ -86,6 +212,7 @@ using (var scope = app.Services.CreateScope())
 
 app.UseHttpsRedirection();
 
+app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();

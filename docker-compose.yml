@@ -28,6 +28,10 @@ services:
       - Redis__Host=${REDIS_HOST}
       - Redis__Port=${REDIS_PORT}
       - ASPNETCORE_URLS=http://+:8080
+      - JWT__Key=${JWT_KEY}
+      - JWT__Issuer=${JWT_ISSUER}
+      - JWT__Audience=${JWT_AUDIENCE}
+      - JWT__ExpireMinutes=${JWT_EXPIRE_MINUTES} 
 
   postgres:
     image: postgres:18
