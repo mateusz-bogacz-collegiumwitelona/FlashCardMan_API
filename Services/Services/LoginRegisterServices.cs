@@ -1,6 +1,7 @@
 ﻿using Data.Interfaces;
 using Data.Models;
 using DTO.Request;
+using DTO.Response;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
@@ -37,7 +38,7 @@ namespace Services.Services
             _refreshTokenRepository = refreshTokenRepository;
         }
 
-        public async Task<ResultHandler<bool>> HandleLoginAsync(LoginRequest request)
+        public async Task<ResultHandler<LoginResponse>> HandleLoginAsync(LoginRequest request)
         {
             try
             {
@@ -49,7 +50,7 @@ namespace Services.Services
 
                     if (user == null)
                     {
-                        return ResultHandler<bool>.Failure(
+                        return ResultHandler<LoginResponse>.Failure(
                             $"Can't find user with this email or login: {request.Login}",
                             StatusCodes.Status404NotFound);
                     }
@@ -58,7 +59,7 @@ namespace Services.Services
 
                 if (!user.EmailConfirmed)
                 {
-                    return ResultHandler<bool>.Failure(
+                    return ResultHandler<LoginResponse>.Failure(
                         "Please confirm your email address before logging in. Check your inbox for the confirmation link.",
                         StatusCodes.Status403Forbidden
                         );
@@ -68,7 +69,7 @@ namespace Services.Services
 
                 if (roles == null || !roles.Any())
                 {
-                    return ResultHandler<bool>.Failure(
+                    return ResultHandler<LoginResponse>.Failure(
                         "User has no role assigned",
                         StatusCodes.Status403Forbidden
                         );
@@ -82,7 +83,7 @@ namespace Services.Services
 
                 if (!result.Succeeded)
                 {
-                    return ResultHandler<bool>.Failure(
+                    return ResultHandler<LoginResponse>.Failure(
                         "Invalid login attempt",
                         StatusCodes.Status401Unauthorized
                         );
@@ -103,15 +104,23 @@ namespace Services.Services
 
                 context.Response.Headers.Append("X-Token-Expiry", jwtToken.ValidTo.ToString("o"));
 
-                return ResultHandler<bool>.Success(
+                var response = new LoginResponse
+                {
+                    Message = "Login successful",
+                    Email = user.Email,
+                    UserName = user.UserName,
+                    Roles = roles.ToList()
+                };
+
+                return ResultHandler<LoginResponse>.Success(
                     "Login successful",
                     StatusCodes.Status200OK,
-                    true
+                    response
                     );
             }
             catch (Exception ex)
             {
-                return ResultHandler<bool>.Failure(
+                return ResultHandler<LoginResponse>.Failure(
                     "An error occurred while adding cards to the deck.",
                     StatusCodes.Status500InternalServerError,
                     new List<string> { ex.Message });
@@ -147,6 +156,41 @@ namespace Services.Services
                 Expires = refresh.ExpiryDate,
                 Path = cookieOptions.Path
             });
+        }
+
+        public async Task<ResultHandler<IdentityResult>> HandleLogoutAsync()
+        {
+            try
+            {
+                await _signInManager.SignOutAsync();
+
+                var context = _httpContext.HttpContext;
+
+                var isDev = context.RequestServices.GetRequiredService<IWebHostEnvironment>().IsDevelopment();
+
+                var cookieOptions = new CookieOptions
+                {
+                    HttpOnly = true,
+                    Secure = !isDev,
+                    SameSite = isDev ? SameSiteMode.Lax : SameSiteMode.None,
+                    Path = "/"
+                };
+
+                context.Response.Cookies.Delete("jwt", cookieOptions);
+                context.Response.Cookies.Delete("refresh_token", cookieOptions);
+
+              
+
+                return ResultHandler<IdentityResult>.Success("Logout successful.", StatusCodes.Status200OK);
+            }
+            catch (Exception ex)
+            {
+                return ResultHandler<IdentityResult>.Failure(
+                    "An error occurred during logout.",
+                    StatusCodes.Status500InternalServerError,
+                    new List<string> { ex.Message }
+                    );
+            }
         }
     }
 }

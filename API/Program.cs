@@ -19,6 +19,27 @@ using System.Text;
 var builder = WebApplication.CreateBuilder(args);
 
 
+//register identity
+builder.Services.AddIdentity<ApplicationUser, IdentityRole<Guid>>()
+    .AddEntityFrameworkStores<ApplicationDbContext>()
+    .AddDefaultTokenProviders();
+
+builder.Services.ConfigureApplicationCookie(options =>
+{
+    options.Events.OnRedirectToLogin = context =>
+    {
+        context.Response.StatusCode = StatusCodes.Status401Unauthorized;
+        return Task.CompletedTask;
+    };
+    options.Events.OnRedirectToAccessDenied = context =>
+    {
+        context.Response.StatusCode = StatusCodes.Status403Forbidden;
+        return Task.CompletedTask;
+    };
+});
+
+
+
 var jwtSettings = builder.Configuration.GetSection("JWT");
 var key = Encoding.UTF8.GetBytes(jwtSettings["KEY"]);
 
@@ -26,6 +47,7 @@ builder.Services.AddAuthentication(options =>
 {
     options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
     options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+    options.DefaultForbidScheme = JwtBearerDefaults.AuthenticationScheme;
 })
 .AddJwtBearer(options =>
 {
@@ -38,16 +60,19 @@ builder.Services.AddAuthentication(options =>
         ValidIssuer = jwtSettings["ISSUER"],
         ValidAudience = jwtSettings["AUDIENCE"],
         IssuerSigningKey = new SymmetricSecurityKey(key),
-        ClockSkew = TimeSpan.Zero
+        ClockSkew = TimeSpan.Zero 
     };
 
     options.Events = new JwtBearerEvents
     {
         OnMessageReceived = context =>
         {
-            if (context.Request.Cookies.ContainsKey("JWT"))
+            Console.WriteLine($"DEBUG: OnMessageReceived start. Cookies: {string.Join(", ", context.Request.Cookies.Keys)}");
+
+            if (context.Request.Cookies.ContainsKey("jwt"))
             {
-                context.Token = context.Request.Cookies["JWT"];
+                context.Token = context.Request.Cookies["jwt"];
+                Console.WriteLine($"DEBUG: SUCCESS - Token read from ‘jwt’ cookie.");
             }
             else if (context.Request.Headers.ContainsKey("Authorization"))
             {
@@ -55,20 +80,42 @@ builder.Services.AddAuthentication(options =>
                 if (authHeader.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase))
                 {
                     context.Token = authHeader.Substring("Bearer ".Length).Trim();
+                    Console.WriteLine($"DEBUG: Token read from Authorization header.");
                 }
+            }
+            else
+            {
+                Console.WriteLine($"DEBUG: Token not found in ‘jwt’ cookie or header.");
             }
 
             return Task.CompletedTask;
         },
         OnTokenValidated = context =>
         {
+            Console.WriteLine($"DEBUG: Token successfully verified. User: {context.Principal.Identity.Name}");
             return Task.CompletedTask;
         },
         OnAuthenticationFailed = context =>
         {
+            Console.WriteLine($"JWT AUTHORIZATION ERROR: {context.Exception.Message}");
+            if (context.Exception.InnerException != null)
+            {
+                Console.WriteLine($"INTERNAL ERROR: {context.Exception.InnerException.Message}");
+            }
             return Task.CompletedTask;
         }
     };
+});
+
+builder.Services.AddCors(op =>
+{
+    op.AddPolicy("AllowClient", p =>
+    {
+        p.WithOrigins("http://localhost:4000", "https://localhost")
+        .AllowAnyMethod()
+        .AllowAnyHeader()
+        .AllowCredentials();
+    });
 });
 
 
@@ -149,25 +196,6 @@ builder.Services.AddSwaggerGen(options =>
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
 
-//register identity
-builder.Services.AddIdentity<ApplicationUser, IdentityRole<Guid>>()
-    .AddEntityFrameworkStores<ApplicationDbContext>()
-    .AddDefaultTokenProviders();
-
-builder.Services.ConfigureApplicationCookie(options =>
-{
-    options.Events.OnRedirectToLogin = context =>
-    {
-        context.Response.StatusCode = StatusCodes.Status401Unauthorized;
-        return Task.CompletedTask;
-    };
-    options.Events.OnRedirectToAccessDenied = context =>
-    {
-        context.Response.StatusCode = StatusCodes.Status403Forbidden;
-        return Task.CompletedTask;
-    };
-});
-
 //register repo
 builder.Services.AddScoped<IDeckRepository, DeckRepository>();
 builder.Services.AddScoped<IFlashCardRepo, FlashCardRepo>();
@@ -211,6 +239,8 @@ using (var scope = app.Services.CreateScope())
 }
 
 app.UseHttpsRedirection();
+
+app.UseCors("AllowClient");
 
 app.UseAuthentication();
 app.UseAuthorization();

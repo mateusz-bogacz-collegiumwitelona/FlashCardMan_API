@@ -1,4 +1,5 @@
 ﻿using DTO.Request;
+using Microsoft.AspNetCore.Cors;
 using Microsoft.AspNetCore.Mvc;
 using Services.Interfaces;
 
@@ -7,7 +8,7 @@ namespace API.Controllers
     /// <summary>
     /// Controller responsible for managing card decks operations.
     /// </summary>
-
+    [EnableCors("AllowClient")]
     [Route("api/deck")]
     [ApiController]
     public class DeckController : ControllerBase

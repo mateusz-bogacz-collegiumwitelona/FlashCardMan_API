@@ -1,4 +1,5 @@
 ﻿using DTO.Request;
+using Microsoft.AspNetCore.Cors;
 using Microsoft.AspNetCore.Mvc;
 using Services.Interfaces;
 
@@ -7,6 +8,7 @@ namespace API.Controllers
     /// <summary>
     /// Controller responsible for managing flashcards operations.
     /// </summary>
+    [EnableCors("AllowClient")]
     [Route("api/flashcard")]
     [ApiController]
     public class FlashCardController : ControllerBase
