@@ -7,5 +7,6 @@ namespace Data.Interfaces
         Task<string?> AddCardsToDeckAsync(Guid deckId, List<AddCardsRequest> requests);
         Task<bool> IsCardExistAsync(string token);
         Task<bool> EditCardAsync(string cardToken, string? question, string? answare);
+        Task<bool> DeleteCardAsync(string token);
     }
 }

@@ -1,6 +1,4 @@
-﻿using Data.Interfaces;
-using DTO.Request;
-using Microsoft.AspNetCore.Http;
+﻿using DTO.Request;
 using Microsoft.AspNetCore.Mvc;
 using Services.Interfaces;
 
@@ -184,6 +182,68 @@ namespace API.Controllers
             [FromQuery] string? answare)
         {
             var result = await _flashCardService.EditCardAsync(cardToken, question, answare);
+
+            return result.IsSuccess
+                ? StatusCode(result.StatusCode, new
+                {
+                    success = true,
+                    message = result.Message,
+                    data = result.Data
+                })
+                : StatusCode(result.StatusCode, new
+                {
+                    success = false,
+                    message = result.Message,
+                    errors = result.Errors
+                });
+        }
+
+        /// <summary>
+        /// Deletes a specific flashcard based on its token.
+        /// </summary>
+        /// <remarks>
+        /// Performs a permanent deletion of a flashcard identified by the provided token passed as a query parameter.
+        /// 
+        /// Example successful request:
+        /// ```
+        /// DELETE /api/flashcard/delete?cardToken=card_token_abc123
+        /// ```
+        /// Example success response:
+        /// ```json
+        /// {
+        ///   "success": true,
+        ///   "message": "Card deleted successfully.",
+        ///   "data": true
+        /// }
+        /// ```
+        /// 
+        /// Example error request (card not found - 404 Not Found):
+        /// ```
+        /// DELETE /api/flashcard/delete?cardToken=INVALID_TOKEN_XXX
+        /// ```
+        /// Example error response (404 Not Found):
+        /// ```json
+        /// {
+        ///   "success": false,
+        ///   "message": "Card not found",
+        ///   "errors": [
+        ///     "CardNotFound"
+        ///   ]
+        /// }
+        /// ```
+        /// </remarks>
+        /// <param name="cardToken">The unique token identifying the flashcard to be deleted (passed as a query parameter).</param>
+        /// <returns>A JSON object indicating success or failure of the deletion operation.</returns>
+        /// <response code="200">The flashcard was deleted successfully.</response>
+        /// <response code="404">The flashcard with the provided token was not found.</response>
+        /// <response code="500">An internal server error occurred while trying to delete the card from the database.</response>
+        [HttpDelete("delete")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+        public async Task<IActionResult> DeleteCardAsync([FromQuery]string cardToken)
+        {
+            var result = await _flashCardService.DeleteCardAsync(cardToken);
 
             return result.IsSuccess
                 ? StatusCode(result.StatusCode, new

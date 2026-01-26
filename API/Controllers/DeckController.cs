@@ -250,7 +250,81 @@ namespace API.Controllers
                 });
         }
 
+        /// <summary>
+        /// Retrieves all flashcards belonging to a specific deck.
+        /// </summary>
+        /// <remarks>
+        /// Returns a list of flashcards associated with the deck token provided in the query parameters.
+        /// 
+        /// Example successful request:
+        /// ```
+        /// GET /api/deck/cards?token=1sP0X8Rcg6u3bigqABxmJw
+        /// ```
+        /// Example success response (200 OK):
+        /// ```json
+        /// {
+        ///   "success": true,
+        ///   "message": "Carnd in deck reviewed successfuly.",
+        ///   "data": [
+        ///     {
+        ///       "question": "Przykładowe pytanie 1",
+        ///       "answer": "Przykładowa odpowiedź 1",
+        ///       "createdAt": "2024-01-25T12:00:00Z",
+        ///       "updatedAt": "2024-01-25T12:00:00Z",
+        ///       "token": "card_token_abc123"
+        ///     },
+        ///     {
+        ///       "question": "Przykładowe pytanie 2",
+        ///       "answer": "Przykładowa odpowiedź 2",
+        ///       "createdAt": "2024-01-26T15:30:00Z",
+        ///       "updatedAt": "2024-01-26T15:30:00Z",
+        ///       "token": "card_token_xyz789"
+        ///     }
+        ///   ]
+        /// }
+        /// ```
+        /// 
+        /// Example error request (missing token - 400 Bad Request):
+        /// ```
+        /// GET /api/deck/cards?token=
+        /// ```
+        /// Example error response (400 Bad Request):
+        /// ```json
+        /// {
+        ///   "success": false,
+        ///   "message": "No token.",
+        ///   "errors": [
+        ///     "NoToken"
+        ///   ]
+        /// }
+        /// ```
+        /// 
+        /// Example error request (deck not found - 404 Not Found):
+        /// ```
+        /// GET /api/deck/cards?token=INVALID_TOKEN
+        /// ```
+        /// Example error response (404 Not Found):
+        /// ```json
+        /// {
+        ///   "success": false,
+        ///   "message": "Deck not found.",
+        ///   "errors": [
+        ///     "DeckNotFound"
+        ///   ]
+        /// }
+        /// ```
+        /// </remarks>
+        /// <param name="token">The unique token of the deck whose cards you want to retrieve (passed as query parameter).</param>
+        /// <returns>A JSON object containing the list of flashcards or error information.</returns>
+        /// <response code="200">Successfully retrieved the list of cards for the deck.</response>
+        /// <response code="400">The token parameter was missing or empty.</response>
+        /// <response code="404">Either the deck with the provided token does not exist, or the deck exists but contains no cards.</response>
+        /// <response code="500">An internal server error occurred while retrieving data.</response>
         [HttpGet("cards")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         public async Task<IActionResult> GetDeckCardsAsync([FromQuery]string token)
         {
             var result = await _deckServices.GetDeckCardsAsync(token);

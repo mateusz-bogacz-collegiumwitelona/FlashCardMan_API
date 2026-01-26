@@ -10,5 +10,7 @@
         public string Description { get; set; } 
         public ICollection<FlashCards> FlashCards { get; set; } = new List<FlashCards>();
         public string Token { get; set; }
+
+        public ApplicationUser User { get; set; }
     }
 }

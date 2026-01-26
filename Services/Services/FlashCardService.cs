@@ -112,5 +112,44 @@ namespace Services.Services
                     new List<string> { ex.Message });
             }
         }
+
+        public async Task<ResultHandler<bool>> DeleteCardAsync(string cardToken)
+        {
+            try
+            {
+                bool isCardExist = await _flashCardRepo.IsCardExistAsync(cardToken);
+
+                if (!isCardExist)
+                {
+                    return ResultHandler<bool>.Failure(
+                        "Card not found",
+                        StatusCodes.Status404NotFound,
+                        new List<string> { "CardNotFound" } 
+                        );
+                }
+
+                bool result = await _flashCardRepo.DeleteCardAsync(cardToken);
+
+                if (!result)
+                {
+                    return ResultHandler<bool>.Failure(
+                       "Failed to delete card from the deck.",
+                       StatusCodes.Status500InternalServerError,
+                       new List<string> { "DeleteCardFailed" });
+                }
+
+                return ResultHandler<bool>.Success(
+                    "Card deleted successfully.",
+                    StatusCodes.Status200OK,
+                    true);
+            }
+            catch (Exception ex)
+            {
+                return ResultHandler<bool>.Failure(
+                    "An error occurred while deleting the card from the deck.",
+                    StatusCodes.Status500InternalServerError,
+                    new List<string> { ex.Message });
+            }
+        }
     }
 }

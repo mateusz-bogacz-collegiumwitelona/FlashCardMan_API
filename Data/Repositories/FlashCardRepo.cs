@@ -62,5 +62,14 @@ namespace Data.Repositories
             var result = await _dbContext.SaveChangesAsync();
             return result > 0;
         }
+
+        public async Task<bool> DeleteCardAsync(string token)
+        {
+            var card = await _dbContext.FlashCards.FirstOrDefaultAsync(fc => fc.Token == token);
+            if (card == null) return false;
+            _dbContext.FlashCards.Remove(card);
+            var result = await _dbContext.SaveChangesAsync();
+            return result > 0;
+        }
     }
 }

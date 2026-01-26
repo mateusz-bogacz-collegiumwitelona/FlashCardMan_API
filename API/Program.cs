@@ -1,6 +1,9 @@
 using Data.Context;
 using Data.Interfaces;
+using Data.Models;
 using Data.Repositories;
+using Data.Seed;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi.Models;
 using Services.Interfaces;
@@ -17,7 +20,7 @@ builder.Services.AddOpenApi();
 
 //swagger
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen( options =>
+builder.Services.AddSwaggerGen(options =>
 {
     options.SwaggerDoc("v1", new OpenApiInfo
     {
@@ -35,6 +38,10 @@ builder.Services.AddSwaggerGen( options =>
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
 
+//register identity
+builder.Services.AddIdentity<ApplicationUser, IdentityRole<Guid>>()
+    .AddEntityFrameworkStores<ApplicationDbContext>()
+    .AddDefaultTokenProviders();
 
 //register repo
 builder.Services.AddScoped<IDeckRepository, DeckRepository>();
@@ -43,6 +50,7 @@ builder.Services.AddScoped<IFlashCardRepo, FlashCardRepo>();
 //register services
 builder.Services.AddScoped<IDeckServices, DeckServices>();
 builder.Services.AddScoped<IFlashCardService, FlashCardService>();
+builder.Services.AddScoped<ILoginRegisterServices, LoginRegisterServices>();
 
 var app = builder.Build();
 
@@ -59,8 +67,21 @@ if (app.Environment.IsDevelopment())
 
 using (var scope = app.Services.CreateScope())
 {
-    var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-    dbContext.Database.Migrate();
+    var serviceProvider = scope.ServiceProvider;
+    try
+    {
+        var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+        var roleManage = serviceProvider.GetRequiredService<RoleManager<IdentityRole<Guid>>>();
+        var userManager = serviceProvider.GetRequiredService<UserManager<ApplicationUser>>();
+
+        await dbContext.Database.MigrateAsync();
+        var seedData = new SeedData(dbContext, userManager, roleManage);
+        await seedData.SeedAsync();
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"Error during migration/seeding: {ex.Message} | {ex.InnerException}");
+    }
 }
 
 app.UseHttpsRedirection();
