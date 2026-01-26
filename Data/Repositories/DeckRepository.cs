@@ -15,16 +15,17 @@ namespace Data.Repositories
             _dbContext = dbContext;
         }
 
-        public async Task<bool> AddNewDeckAsync(string name, string description)
+        public async Task<bool> AddNewDeckAsync(string name, string description, ApplicationUser user)
         {
-            var newDeck = new Models.Deck
+            var newDeck = new Deck
             {
                 Id = Guid.NewGuid(),
                 Name = name,
                 Description = description,
                 CreatedAt = DateTime.UtcNow,
                 UpdatedAt = DateTime.UtcNow,
-                Token = GenerateToken()
+                Token = GenerateToken(),
+                User = user
             };
 
             await _dbContext.Decks.AddAsync(newDeck);

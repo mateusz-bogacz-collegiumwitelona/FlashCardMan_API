@@ -1,7 +1,9 @@
 ﻿using Data.Interfaces;
+using Data.Models;
 using DTO.Request;
 using DTO.Response;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Identity;
 using Services.Helpers;
 using Services.Interfaces;
 
@@ -10,17 +12,29 @@ namespace Services.Services
     public class DeckServices : IDeckServices
     {
         private readonly IDeckRepository _deckRepo;
+        private readonly UserManager<ApplicationUser> _userManager;
 
-        public DeckServices(IDeckRepository deckRepo)
+        public DeckServices(IDeckRepository deckRepo, UserManager<ApplicationUser> userManager)
         {
             _deckRepo = deckRepo;
+            _userManager = userManager;
         }
 
-        public async Task<ResultHandler<string>> CreateDeckAsync(AddNewDeckRequest request)
+        public async Task<ResultHandler<string>> CreateDeckAsync(AddNewDeckRequest request, string userEmail)
         {
             try
             {
-                var result = await _deckRepo.AddNewDeckAsync(request.Name, request.Description);
+                var user = await _userManager.FindByEmailAsync(userEmail);
+
+                if (user == null)
+                {
+                    return ResultHandler<string>.Failure(
+                        "User not found.",
+                        StatusCodes.Status404NotFound,
+                        new List<string> { "UserNotFound" });
+                }
+
+                var result = await _deckRepo.AddNewDeckAsync(request.Name, request.Description, user);
 
                 if (!result)
                 {

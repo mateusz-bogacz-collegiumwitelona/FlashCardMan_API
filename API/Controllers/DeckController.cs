@@ -11,7 +11,7 @@ namespace API.Controllers
     [EnableCors("AllowClient")]
     [Route("api/deck")]
     [ApiController]
-    public class DeckController : ControllerBase
+    public class DeckController : AuthControllerBase
     {
         private readonly IDeckServices _deckServices;
 
@@ -50,7 +50,9 @@ namespace API.Controllers
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         public async Task<IActionResult> CreateDeck([FromBody] AddNewDeckRequest request)
         {
-            var result = await _deckServices.CreateDeckAsync(request);
+            var (userEmail, error) = GetAuthenticatedUser();
+
+            var result = await _deckServices.CreateDeckAsync(request, userEmail);
             
             return result.IsSuccess
                 ? StatusCode(result.StatusCode, new

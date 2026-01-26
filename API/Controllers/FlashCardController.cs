@@ -11,7 +11,7 @@ namespace API.Controllers
     [EnableCors("AllowClient")]
     [Route("api/flashcard")]
     [ApiController]
-    public class FlashCardController : ControllerBase
+    public class FlashCardController : AuthControllerBase
     {
         private readonly IFlashCardService _flashCardService;
 
