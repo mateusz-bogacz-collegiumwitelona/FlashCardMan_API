@@ -35,9 +35,18 @@ namespace API.Controllers
         /// POST /api/login
         /// {
         ///   "login": "user@example.com",
-        ///   "password": "SecurePassword123!"
+        ///   "password": "Password123!"
         /// }
         /// ```
+        /// or
+        /// ```json
+        /// POST /api/login
+        /// {
+        ///   "login": "User",
+        ///   "password": "Password123!"
+        /// }
+        /// ```
+        /// 
         /// Example success response (Cookies are set in headers):
         /// ```json
         /// {
