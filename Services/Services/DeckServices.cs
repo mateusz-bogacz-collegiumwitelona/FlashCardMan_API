@@ -171,13 +171,13 @@ namespace Services.Services
             }
         }
 
-        public async Task<ResultHandler<string>> DeleteDeckAsync(string token)
+        public async Task<ResultHandler<bool>> DeleteDeckAsync(string token, string userEmail)
         {
             try
             {
                 if (string.IsNullOrEmpty(token))
                 {
-                    return ResultHandler<string>.Failure(
+                    return ResultHandler<bool>.Failure(
                         "No token.",
                         StatusCodes.Status400BadRequest,
                         new List<string> { "NoToken" });
@@ -187,30 +187,50 @@ namespace Services.Services
 
                 if (isExist == null)
                 {
-                    return ResultHandler<string>.Failure(
+                    return ResultHandler<bool>.Failure(
                         "Deck not found.",
                         StatusCodes.Status404NotFound,
                         new List<string> { "DeckNotFound" });
+                }
+
+                var user = await _userManager.FindByEmailAsync(userEmail);
+
+                if (user == null)
+                {
+                    return ResultHandler<bool>.Failure(
+                        "User not foud",
+                        StatusCodes.Status404NotFound
+                        );
+                }
+
+                bool isHisDeck = await _deckRepo.IsHisDeck(user.Id, token);
+
+                if (!isHisDeck)
+                {
+                    return ResultHandler<bool>.Failure(
+                        "User is no authorize to interact with this deck",
+                        StatusCodes.Status401Unauthorized
+                        );
                 }
 
                 var result = await _deckRepo.DeleteDeckAsync(isExist);
 
                 if (!result)
                 {
-                    return ResultHandler<string>.Failure(
+                    return ResultHandler<bool>.Failure(
                         "Failed to delete deck.",
                         StatusCodes.Status500InternalServerError,
                         new List<string> { "CannotDeleteDeck" });
                 }
 
-                return ResultHandler<string>.Success(
+                return ResultHandler<bool>.Success(
                     "Deck deleted successfully.",
                     StatusCodes.Status200OK,
-                    null);
+                    true);
             } 
             catch (Exception ex)
             {
-                return ResultHandler<string>.Failure(
+                return ResultHandler<bool>.Failure(
                     "An error occurred while updating the deck.",
                     StatusCodes.Status500InternalServerError,
                     new List<string> { ex.Message });

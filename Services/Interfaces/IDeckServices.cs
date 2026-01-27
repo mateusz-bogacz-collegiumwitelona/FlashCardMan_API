@@ -9,7 +9,7 @@ namespace Services.Interfaces
         Task<ResultHandler<string>> CreateDeckAsync(AddNewDeckRequest request, string userEmail);
         Task<ResultHandler<List<GetDeckResponse>>> GetAllDecksAsync(string userEmail);
         Task<ResultHandler<bool>> EditDeckAsync(EditDeckRequest request, string userEmail);
-        Task<ResultHandler<string>> DeleteDeckAsync(string token);
+        Task<ResultHandler<bool>> DeleteDeckAsync(string token, string userEmail);
         Task<ResultHandler<List<GetCardsForDeckResponse>>> GetDeckCardsAsync(string token);
     }
 }

@@ -239,7 +239,8 @@ namespace API.Controllers
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         public async Task<IActionResult> DeleteDeckAsync([FromQuery] string token)
         {
-            var result = await _deckServices.DeleteDeckAsync(token);
+            var (userEmail, error) = GetAuthenticatedUser();
+            var result = await _deckServices.DeleteDeckAsync(token, userEmail);
 
             return result.IsSuccess
                 ? StatusCode(result.StatusCode, new
