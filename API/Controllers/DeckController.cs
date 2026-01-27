@@ -575,7 +575,113 @@ namespace API.Controllers
             return result.Data!;
         }
 
+        /// <summary>
+        /// Imports a flashcard deck from a JSON file.
+        /// </summary>
+        /// <remarks>
+        /// Imports a flashcard deck by uploading a JSON file using
+        /// <c>multipart/form-data</c>.
+        /// 
+        /// The JSON file must contain deck metadata (name, optional description)
+        /// and a list of flashcards with questions and answers.
+        /// 
+        /// The authenticated user becomes the owner of the imported deck.
+        /// A new deck and its flashcards are created in a single database transaction.
+        /// 
+        /// The request must be sent as a file upload.
+        /// 
+        /// Example successful request:
+        /// ```
+        /// POST /api/deck/import
+        /// Content-Type: multipart/form-data
+        /// 
+        /// file=@deck.json
+        /// ```
+        ///
+        /// Example JSON file content:
+        /// ```json
+        /// {
+        ///   "name": "My Imported Deck",
+        ///   "description": "Deck imported from JSON",
+        ///   "cards": [
+        ///     {
+        ///       "question": "What is ASP.NET Core?",
+        ///       "answer": "A cross-platform framework for building web APIs."
+        ///     },
+        ///     {
+        ///       "question": "What is Entity Framework Core?",
+        ///       "answer": "An ORM for .NET applications."
+        ///     }
+        ///   ]
+        /// }
+        /// ```
+        ///
+        /// Example success response (200 OK):
+        /// ```json
+        /// {
+        ///   "success": true,
+        ///   "message": "Deck import successfuly.",
+        ///   "data": true
+        /// }
+        /// ```
+        ///
+        /// Example error response (400 Bad Request – invalid file):
+        /// ```json
+        /// {
+        ///   "success": false,
+        ///   "message": "Invalid JSON file.",
+        ///   "errors": null
+        /// }
+        /// ```
+        ///
+        /// Example error response (401 Unauthorized):
+        /// ```json
+        /// {
+        ///   "success": false,
+        ///   "message": "User is not authenticated.",
+        ///   "errors": null
+        /// }
+        /// ```
+        ///
+        /// Example error response (404 Not Found – user not found):
+        /// ```json
+        /// {
+        ///   "success": false,
+        ///   "message": "User not found",
+        ///   "errors": null
+        /// }
+        /// ```
+        ///
+        /// Example error response (500 Internal Server Error):
+        /// ```json
+        /// {
+        ///   "success": false,
+        ///   "message": "An error occurred while importing the deck.",
+        ///   "errors": [
+        ///     "CannotImportDeck"
+        ///   ]
+        /// }
+        /// ```
+        /// </remarks>
+        /// <param name="file">
+        /// JSON file containing the deck data to import.
+        /// </param>
+        /// <returns>
+        /// A success response if the deck was imported correctly,
+        /// or an error response if the import fails.
+        /// </returns>
+        /// <response code="200">The deck was successfully imported.</response>
+        /// <response code="400">The uploaded file is missing, empty, or contains invalid JSON.</response>
+        /// <response code="401">The user is not authenticated.</response>
+        /// <response code="404">The authenticated user could not be found.</response>
+        /// <response code="500">An internal server error occurred while importing the deck.</response>
         [Consumes("multipart/form-data")]
+        [Produces("application/json")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         [HttpPost("import")]
         public async Task<IActionResult> ImportDeckFromJson(IFormFile file)
         {
