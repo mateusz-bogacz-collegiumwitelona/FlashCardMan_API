@@ -32,7 +32,11 @@ namespace Data.Repositories
                     CreatedAt = DateTime.UtcNow,
                     UpdatedAt = DateTime.UtcNow,
                     DeckId = deckId,
-                    Token = GenerateToken()
+                    Token = GenerateToken(),
+                    NextReviewAt = DateTime.UtcNow,
+                    Repetitions = 0,
+                    EasinessFactor = 2.5,
+                    IntervalDays = 0
                 };
 
                 await _dbContext.FlashCards.AddAsync(flashCard);
@@ -70,6 +74,15 @@ namespace Data.Repositories
             _dbContext.FlashCards.Remove(card);
             var result = await _dbContext.SaveChangesAsync();
             return result > 0;
+        }
+
+        public async Task<FlashCards?> GetCardByTokenAsync(string token)
+            => await _dbContext.FlashCards.FirstOrDefaultAsync(fc => fc.Token == token);
+
+        public async Task<bool> UpdateCardAsync(FlashCards card)
+        {
+            _dbContext.FlashCards.Update(card);
+            return await _dbContext.SaveChangesAsync() >0;
         }
     }
 }

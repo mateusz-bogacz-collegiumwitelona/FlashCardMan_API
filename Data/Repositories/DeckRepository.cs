@@ -15,13 +15,13 @@ namespace Data.Repositories
             _dbContext = dbContext;
         }
 
-        public async Task<bool> AddNewDeckAsync(string name, string description, ApplicationUser user)
+        public async Task<bool> AddNewDeckAsync(string name, string? description, ApplicationUser user)
         {
             var newDeck = new Deck
             {
                 Id = Guid.NewGuid(),
                 Name = name,
-                Description = description,
+                Description = description ?? null,
                 CreatedAt = DateTime.UtcNow,
                 UpdatedAt = DateTime.UtcNow,
                 Token = GenerateToken(),
@@ -40,7 +40,7 @@ namespace Data.Repositories
                     .Select(d => new GetDeckResponse
                     {
                         Name = d.Name,
-                        Description = d.Description,
+                        Description = d.Description ?? null,
                         Token = d.Token
                     }).ToListAsync();
 
@@ -91,7 +91,6 @@ namespace Data.Repositories
 
         public async Task<bool> IsDeckExist(string token)
             => await _dbContext.Decks.AnyAsync(d => d.Token == token);
-
 
         public async Task<bool> IsHisDeck(Guid userId, string deckToken)
             => await _dbContext.Decks.AnyAsync(d => d.Token == deckToken && d.User.Id == userId);

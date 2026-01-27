@@ -261,5 +261,39 @@ namespace API.Controllers
                     errors = result.Errors
                 });
         }
+
+        [HttpPost("review")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public async Task<IActionResult> ReviewCardAsync([FromBody] ReviewCardRequest request)
+        {
+            if (!ModelState.IsValid) return BadRequest(ModelState);
+
+            var (userEmail, error) = GetAuthenticatedUser();
+            if (error != null) return error;
+
+            var result = await _flashCardService.ReviewCardAsync(request, userEmail);
+            
+            if (result.IsSuccess)
+            {
+                return StatusCode(result.StatusCode, new 
+                { 
+                    success = true, 
+                    message = result.Message, 
+                    data = result.Data 
+                });
+            }
+            else
+            {
+                return StatusCode(result.StatusCode, new 
+                { 
+                    success = false, 
+                    message = result.Message, 
+                    errors = result.Errors 
+                });
+            }
+        }
     }
 }

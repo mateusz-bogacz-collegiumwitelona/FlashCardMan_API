@@ -10,5 +10,12 @@
         public Guid DeckId { get; set; }
         public Deck Deck { get; set; }
         public string Token { get; set; }
+
+        public DateTime NextReviewAt { get; set; }
+
+        public int Repetitions { get; set; }
+        public double EasinessFactor { get; set; }
+        public int IntervalDays { get; set; }
+
     }
 }

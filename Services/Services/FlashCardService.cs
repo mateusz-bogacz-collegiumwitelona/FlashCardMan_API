@@ -1,6 +1,8 @@
 ﻿using Data.Interfaces;
+using Data.Models;
 using DTO.Request;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Identity;
 using Services.Helpers;
 using Services.Interfaces;
 
@@ -10,11 +12,16 @@ namespace Services.Services
     {
         private readonly IFlashCardRepo _flashCardRepo;
         private readonly IDeckRepository _deckRepo;
+        private readonly UserManager<ApplicationUser> _userManager;
 
-        public FlashCardService(IFlashCardRepo flashCardRepo, IDeckRepository deckRepo)
+        public FlashCardService(
+            IFlashCardRepo flashCardRepo, 
+            IDeckRepository deckRepo,
+            UserManager<ApplicationUser> userManager)
         {
             _flashCardRepo = flashCardRepo;
             _deckRepo = deckRepo;
+            _userManager = userManager;
         }
 
         public async Task<ResultHandler<bool>> AddCardsToDeckAsync(string deckToken, List<AddCardsRequest> requests)
@@ -147,6 +154,58 @@ namespace Services.Services
             {
                 return ResultHandler<bool>.Failure(
                     "An error occurred while deleting the card from the deck.",
+                    StatusCodes.Status500InternalServerError,
+                    new List<string> { ex.Message });
+            }
+        }
+
+       public async Task<ResultHandler<bool>> ReviewCardAsync(ReviewCardRequest request, string userEmail)
+        {
+            try
+            {
+                var card = await _flashCardRepo.GetCardByTokenAsync(request.CardToken);
+
+                if (card == null)
+                {
+                    return ResultHandler<bool>.Failure(
+                        "Card not found",
+                        StatusCodes.Status404NotFound,
+                        new List<string> { "CardNotFound" }
+                        );
+                }
+
+                var sm2Result = Sm2Calc.CalculatNewState(
+                    request.Grade,
+                    card.Repetitions,
+                    card.EasinessFactor,
+                    card.IntervalDays
+                    );
+
+                card.Repetitions = sm2Result.Repetitions;
+                card.EasinessFactor = sm2Result.EasinessFactor;
+                card.IntervalDays = sm2Result.IntervalDays;
+                card.NextReviewAt = sm2Result.NextReviewAt;
+                card.UpdatedAt = DateTime.UtcNow;
+
+                var updateResult = await _flashCardRepo.UpdateCardAsync(card);
+
+                if (!updateResult)
+                {
+                    return ResultHandler<bool>.Failure(
+                       "Failed to review the card.",
+                       StatusCodes.Status500InternalServerError,
+                       new List<string> { "ReviewCardFailed" });
+                }
+
+                return ResultHandler<bool>.Success(
+                    "Card reviewed successfully.",
+                    StatusCodes.Status200OK,
+                    true);
+            }
+            catch (Exception ex)
+            {
+                return ResultHandler<bool>.Failure(
+                    "An error occurred while reviewing the card.",
                     StatusCodes.Status500InternalServerError,
                     new List<string> { ex.Message });
             }

@@ -8,5 +8,6 @@ namespace Services.Interfaces
         Task<ResultHandler<bool>> AddCardsToDeckAsync(string deckToken, List<AddCardsRequest> requests);
         Task<ResultHandler<bool>> EditCardAsync(string cardToken, string? question, string? answare);
         Task<ResultHandler<bool>> DeleteCardAsync(string cardToken);
+        Task<ResultHandler<bool>> ReviewCardAsync(ReviewCardRequest request, string userEmail);
     }
 }
