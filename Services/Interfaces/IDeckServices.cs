@@ -10,6 +10,6 @@ namespace Services.Interfaces
         Task<ResultHandler<List<GetDeckResponse>>> GetAllDecksAsync(string userEmail);
         Task<ResultHandler<bool>> EditDeckAsync(EditDeckRequest request, string userEmail);
         Task<ResultHandler<bool>> DeleteDeckAsync(string token, string userEmail);
-        Task<ResultHandler<List<GetCardsForDeckResponse>>> GetDeckCardsAsync(string token);
+        Task<ResultHandler<List<GetCardsForDeckResponse>>> GetDeckCardsAsync(string token, string userEmail);
     }
 }

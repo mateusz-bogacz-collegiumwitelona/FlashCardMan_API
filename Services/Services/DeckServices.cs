@@ -237,7 +237,7 @@ namespace Services.Services
             }
         }
 
-        public async Task<ResultHandler<List<GetCardsForDeckResponse>>> GetDeckCardsAsync(string token)
+        public async Task<ResultHandler<List<GetCardsForDeckResponse>>> GetDeckCardsAsync(string token, string userEmail)
         {
             try
             {
@@ -257,6 +257,26 @@ namespace Services.Services
                         "Deck not found.",
                         StatusCodes.Status404NotFound,
                         new List<string> { "DeckNotFound" });
+                }
+
+                var user = await _userManager.FindByEmailAsync(userEmail);
+
+                if (user == null)
+                {
+                    return ResultHandler<List<GetCardsForDeckResponse>>.Failure(
+                        "User not foud",
+                        StatusCodes.Status404NotFound
+                        );
+                }
+
+                bool isHisDeck = await _deckRepo.IsHisDeck(user.Id, token);
+
+                if (!isHisDeck)
+                {
+                    return ResultHandler<List<GetCardsForDeckResponse>>.Failure(
+                        "User is no authorize to interact with this deck",
+                        StatusCodes.Status401Unauthorized
+                        );
                 }
 
                 var result = await _deckRepo.GetDeckCardsAsync(token);

@@ -333,7 +333,8 @@ namespace API.Controllers
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         public async Task<IActionResult> GetDeckCardsAsync([FromQuery]string token)
         {
-            var result = await _deckServices.GetDeckCardsAsync(token);
+            var (userEmail, error) = GetAuthenticatedUser();
+            var result = await _deckServices.GetDeckCardsAsync(token, userEmail);
 
             return result.IsSuccess
                ? StatusCode(result.StatusCode, new
