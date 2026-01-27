@@ -351,6 +351,97 @@ namespace API.Controllers
                });
         }
 
+        /// <summary>
+        /// Retrieves all flashcards belonging to a specific deck that are due for review.
+        /// </summary>
+        /// <remarks>
+        /// Returns a list of flashcards associated with the deck token provided in the route path.
+        /// Only includes cards where the 'NextReviewAt' date is in the past or present.
+        /// The user must be authenticated and must be the owner of the deck.
+        /// 
+        /// Example successful request:
+        /// ```
+        /// GET /api/deck/1sP0X8Rcg6u3bigqABxmJw/due-cards
+        /// ```
+        /// Example success response (200 OK):
+        /// ```json
+        /// {
+        ///   "success": true,
+        ///   "message": "Carnd in deck reviewed successfuly.",
+        ///   "data": [
+        ///     {
+        ///       "question": "Przykładowe pytanie do powtórki 1",
+        ///       "answer": "Przykładowa odpowiedź 1",
+        ///       "createdAt": "2024-01-20T12:00:00Z",
+        ///       "updatedAt": "2024-01-25T12:00:00Z",
+        ///       "token": "card_token_abc123"
+        ///     },
+        ///     {
+        ///       "question": "Przykładowe pytanie do powtórki 2",
+        ///       "answer": "Przykładowa odpowiedź 2",
+        ///       "createdAt": "2024-01-22T15:30:00Z",
+        ///       "updatedAt": "2024-01-26T15:30:00Z",
+        ///       "token": "card_token_xyz789"
+        ///     }
+        ///   ]
+        /// }
+        /// ```
+        /// 
+        /// Example error request (Unauthorized access - 401 Unauthorized):
+        /// ```
+        /// GET /api/deck/NOT_MY_DECK_TOKEN/due-cards
+        /// ```
+        /// Example error response (401 Unauthorized):
+        /// ```json
+        /// {
+        ///   "success": false,
+        ///   "message": "User is no authorize to interact with this deck",
+        ///   "errors": null
+        /// }
+        /// ```
+        /// 
+        /// Example error request (deck not found - 404 Not Found):
+        /// ```
+        /// GET /api/deck/INVALID_TOKEN/due-cards
+        /// ```
+        /// Example error response (404 Not Found):
+        /// ```json
+        /// {
+        ///   "success": false,
+        ///   "message": "Deck not found.",
+        ///   "errors": [
+        ///     "DeckNotFound"
+        ///   ]
+        /// }
+        /// ```
+        /// 
+        /// Example error request (no due cards in deck - 404 Not Found):
+        /// ```
+        /// GET /api/deck/VALID_TOKEN_NO_DUE_CARDS/due-cards
+        /// ```
+        /// Example error response (404 Not Found):
+        /// ```json
+        /// {
+        ///   "success": false,
+        ///   "message": "Cards in deck not found.",
+        ///   "errors": [
+        ///     "CardsNotFound"
+        ///   ]
+        /// }
+        /// ```
+        /// </remarks>
+        /// <param name="token">The unique token of the deck whose due cards you want to retrieve (passed as route parameter).</param>
+        /// <returns>A JSON object containing the list of due flashcards or error information.</returns>
+        /// <response code="200">Successfully retrieved the list of due cards for the deck.</response>
+        /// <response code="400">The token parameter was empty.</response>
+        /// <response code="401">The authenticated user is not authorized to access this deck.</response>
+        /// <response code="404">Either the deck with the provided token does not exist, or the deck exists but contains no cards due for review.</response>
+        /// <response code="500">An internal server error occurred while retrieving data.</response>
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         [HttpGet("{token}/due-cards")]
         public async Task<IActionResult> GetDueCardForDeckAsync([FromRoute] string token)
         {

@@ -83,7 +83,7 @@ namespace Data.Repositories
         public async Task<bool> UpdateCardAsync(FlashCards card)
         {
             _dbContext.FlashCards.Update(card);
-            return await _dbContext.SaveChangesAsync() >0;
+            return await _dbContext.SaveChangesAsync() > 0;
         }
     }
 }
