@@ -1,8 +1,15 @@
+using BackgroundWorks;
 using Data.Context;
 using Data.Interfaces;
 using Data.Models;
 using Data.Repositories;
 using Data.Seed;
+using Events;
+using Events.Emails;
+using Events.Emails.Helpers;
+using Events.Emails.Interfaces;
+using Events.Event;
+using Events.Interfaces;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
@@ -17,7 +24,6 @@ using System.Reflection;
 using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
-
 
 //register identity
 builder.Services.AddIdentity<ApplicationUser, IdentityRole<Guid>>()
@@ -37,7 +43,6 @@ builder.Services.ConfigureApplicationCookie(options =>
         return Task.CompletedTask;
     };
 });
-
 
 
 var jwtSettings = builder.Configuration.GetSection("JWT");
@@ -205,6 +210,24 @@ builder.Services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
 builder.Services.AddScoped<IDeckServices, DeckServices>();
 builder.Services.AddScoped<IFlashCardService, FlashCardService>();
 builder.Services.AddScoped<ILoginRegisterServices, LoginRegisterServices>();
+
+//register queue
+builder.Services.AddSingleton<IEmailQueue, EmailQueue>();
+
+//register helpers
+builder.Services.AddScoped<IEmailSender, EmailSender>();
+builder.Services.AddScoped<EmailBodys>();
+builder.Services.AddHttpContextAccessor();
+
+//register background services
+builder.Services.AddHostedService<EmailBackgroundWorker>();
+
+//register dispachers
+builder.Services.AddTransient<IEventDispatcher, EventDispatcher>();
+
+//register observers
+builder.Services.AddTransient<IEventHandler<UserRegisteredEvent>, SendRegistrationEmailHandler>();
+
 
 var app = builder.Build();
 

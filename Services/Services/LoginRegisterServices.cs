@@ -2,6 +2,8 @@
 using Data.Models;
 using DTO.Request;
 using DTO.Response;
+using Events.Event;
+using Events.Interfaces;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
@@ -21,6 +23,7 @@ namespace Services.Services
         private readonly RoleManager<IdentityRole<Guid>> _roleManager;
         private readonly IHttpContextAccessor _httpContext;
         private readonly IRefreshTokenRepository _refreshTokenRepository;
+        private readonly IEventDispatcher _eventDispatcher;
 
         public LoginRegisterServices(
             UserManager<ApplicationUser> userManager,
@@ -28,7 +31,8 @@ namespace Services.Services
             RoleManager<IdentityRole<Guid>> roleManager,
             IHttpContextAccessor httpContext,
             IConfiguration config,
-            IRefreshTokenRepository refreshTokenRepository
+            IRefreshTokenRepository refreshTokenRepository,
+            IEventDispatcher eventDispatcher
             ) : base(config)
         {
             _userManager = userManager;
@@ -36,6 +40,7 @@ namespace Services.Services
             _roleManager = roleManager;
             _httpContext = httpContext;
             _refreshTokenRepository = refreshTokenRepository;
+            _eventDispatcher = eventDispatcher;
         }
 
         public async Task<ResultHandler<LoginResponse>> HandleLoginAsync(LoginRequest request)
@@ -187,6 +192,142 @@ namespace Services.Services
             {
                 return ResultHandler<IdentityResult>.Failure(
                     "An error occurred during logout.",
+                    StatusCodes.Status500InternalServerError,
+                    new List<string> { ex.Message }
+                    );
+            }
+        }
+
+        public async Task<ResultHandler<IdentityResult>> RegisterUserAsync(RegisterRequest request)
+        {
+            try
+            {
+                var isEmailTaken = await _userManager.FindByEmailAsync(request.Email);
+
+                if (isEmailTaken != null)
+                    return ResultHandler<IdentityResult>.Failure(
+                        "Email is already taken.",
+                        StatusCodes.Status400BadRequest
+                        );
+
+                var isUserNameTaken = await _userManager.FindByNameAsync(request.UserName);
+                if (isUserNameTaken != null)
+                    return ResultHandler<IdentityResult>.Failure(
+                        "User name is already taken.",
+                        StatusCodes.Status400BadRequest
+                        );
+
+                var user = new ApplicationUser
+                {
+                    Id = Guid.NewGuid(),
+                    UserName = request.UserName,
+                    NormalizedUserName = request.UserName.ToUpper(),
+                    Email = request.Email,
+                    NormalizedEmail = request.Email.ToUpper(),
+                    EmailConfirmed = false,
+                    SecurityStamp = Guid.NewGuid().ToString(),
+                    ConcurrencyStamp = Guid.NewGuid().ToString(),
+                    CreatedAt = DateTime.UtcNow,
+                    UpdatedAt = DateTime.UtcNow
+                };
+
+                var createUser = await _userManager.CreateAsync(user, request.Password);
+
+                if (!createUser.Succeeded)
+                    return ResultHandler<IdentityResult>.Failure(
+                        "User creation failed.",
+                        StatusCodes.Status500InternalServerError,
+                        createUser.Errors.Select(e => e.Description).ToList()
+                        );
+
+                string defaultRole = "User";
+
+                if (!await _roleManager.RoleExistsAsync(defaultRole))
+                {
+                    return ResultHandler<IdentityResult>.Failure(
+                        $"Default role '{defaultRole}' does not exist.",
+                        StatusCodes.Status500InternalServerError
+                    );
+                }
+
+                var addToRole = await _userManager.AddToRoleAsync(user, defaultRole);
+
+                if (!addToRole.Succeeded)
+                    return ResultHandler<IdentityResult>.Failure(
+                        "Assigning role to user failed.",
+                        StatusCodes.Status500InternalServerError,
+                        addToRole.Errors.Select(e => e.Description).ToList()
+                        );
+
+                var confirmationToken = await _userManager.GenerateEmailConfirmationTokenAsync(user);
+
+                if (string.IsNullOrEmpty(confirmationToken))
+                {
+                    return ResultHandler<IdentityResult>.Failure(
+                        "Failed to generate email confirmation token.",
+                        StatusCodes.Status500InternalServerError
+                    );
+                }
+
+                await _eventDispatcher.PublishAsync(new UserRegisteredEvent(user, confirmationToken));
+
+                return ResultHandler<IdentityResult>.Success(
+                    "User registered successfully. Please check your email to confirm your account.",
+                    StatusCodes.Status201Created
+                    );
+            }
+            catch (Exception ex)
+            {
+                return ResultHandler<IdentityResult>.Failure(
+                    "An error occurred during user registration.",
+                    StatusCodes.Status500InternalServerError,
+                    new List<string> { ex.Message }
+                    );
+            }
+        }
+
+        public async Task<ResultHandler<IdentityResult>> ConfirmEmailAsync(ConfirmEmailRequest request)
+        {
+            try
+            {
+                var user = await _userManager.FindByEmailAsync(request.Email);
+
+                if (user == null)
+                {
+                    return ResultHandler<IdentityResult>.Failure(
+                        "User not found.",
+                        StatusCodes.Status404NotFound
+                        );
+                }
+
+                if (user.EmailConfirmed)
+                {
+                    return ResultHandler<IdentityResult>.Failure(
+                        "Email is already confirmed.",
+                        StatusCodes.Status400BadRequest
+                        );
+                }
+
+                var result = await _userManager.ConfirmEmailAsync(user, request.Token);
+
+                if (!result.Succeeded)
+                {
+                    return ResultHandler<IdentityResult>.Failure(
+                        "Email confirmation failed.",
+                        StatusCodes.Status500InternalServerError,
+                        result.Errors.Select(e => e.Description).ToList()
+                        );
+                }
+
+                return ResultHandler<IdentityResult>.Success(
+                    "Email confirmed successfully.",
+                    StatusCodes.Status200OK
+                    );
+            }
+            catch (Exception ex)
+            {
+                return ResultHandler<IdentityResult>.Failure(
+                    "An error occurred during email confirmation.",
                     StatusCodes.Status500InternalServerError,
                     new List<string> { ex.Message }
                     );

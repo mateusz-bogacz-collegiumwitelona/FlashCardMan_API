@@ -9,5 +9,7 @@ namespace Services.Interfaces
     {
         Task<ResultHandler<LoginResponse>> HandleLoginAsync(LoginRequest request);
         Task<ResultHandler<IdentityResult>> HandleLogoutAsync();
+        Task<ResultHandler<IdentityResult>> RegisterUserAsync(RegisterRequest request);
+        Task<ResultHandler<IdentityResult>> ConfirmEmailAsync(ConfirmEmailRequest request);
     }
 }

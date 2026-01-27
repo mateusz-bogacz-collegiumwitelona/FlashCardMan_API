@@ -32,6 +32,14 @@ services:
       - JWT__Issuer=${JWT_ISSUER}
       - JWT__Audience=${JWT_AUDIENCE}
       - JWT__ExpireMinutes=${JWT_EXPIRE_MINUTES} 
+      - Mail__Host=${MAIL_HOST}
+      - Mail__Port=${MAILPIT_SMTP_PORT}
+      - Mail__EnableSsl=${MAIL_ENABLE_SSL}
+      - Mail__Username=${MAIL_USERNAME}
+      - Mail__Password=${MAIL_PASSWORD}
+      - Mail__From=${MAIL_FROM}
+      - Mail__DisplayName=${MAIL_DISPLAY_NAME}
+      - Logging__LogLevel__Microsoft.EntityFrameworkCore.Database.Command=Warning
 
   postgres:
     image: postgres:18
@@ -58,15 +66,15 @@ services:
     restart: unless-stopped
 
   mailpit:
-    image: axllent/mailpit:v1.27.9
-    container_name: mailpit-dev
-    hostname: mailpit
-    ports:
-      - "${MAILPIT_PORT:-63854}:8025"
-      - "1025:1025"
-    networks:
-      - dev
-    restart: unless-stopped
+      image: axllent/mailpit:v1.27.9
+      container_name: mailpit-dev
+      hostname: mailpit
+      ports:
+        - "${MAILPIT_UI_PORT:-63854}:8025"
+        - "${MAILPIT_SMTP_PORT:-1025}:1025"                  
+      networks:
+        - dev
+      restart: unless-stopped
 
   redis:
     image: redis:8.4.0

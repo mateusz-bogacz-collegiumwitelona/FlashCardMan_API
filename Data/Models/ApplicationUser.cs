@@ -9,7 +9,7 @@ namespace Data.Models
 {
     public class ApplicationUser : IdentityUser<Guid>
     {
-        public DateTime DateTime { get; set; }
+        public DateTime CreatedAt { get; set; }
         public DateTime UpdatedAt { get; set; }
 
         public ICollection<Deck> Decks { get; set; }

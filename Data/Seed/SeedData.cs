@@ -59,7 +59,7 @@ namespace Data.Seed
                     Email = userEmail,
                     NormalizedEmail = userEmail.ToUpper(),
                     EmailConfirmed = true,
-                    DateTime = DateTime.UtcNow,
+                    CreatedAt = DateTime.UtcNow,
                     UpdatedAt = DateTime.UtcNow,
                     ConcurrencyStamp = Guid.NewGuid().ToString(),
                     SecurityStamp = Guid.NewGuid().ToString()
