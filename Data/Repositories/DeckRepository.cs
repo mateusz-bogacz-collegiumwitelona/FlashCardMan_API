@@ -92,5 +92,8 @@ namespace Data.Repositories
         public async Task<bool> IsDeckExist(string token)
             => await _dbContext.Decks.AnyAsync(d => d.Token == token);
 
+
+        public async Task<bool> IsHisDeck(Guid userId, string deckToken)
+            => await _dbContext.Decks.AnyAsync(d => d.Token == deckToken && d.User.Id == userId);
     }
 }

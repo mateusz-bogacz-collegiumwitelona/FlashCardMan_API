@@ -180,7 +180,8 @@ namespace API.Controllers
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         public async Task<IActionResult> EditDeckAsync(EditDeckRequest request)
         {
-            var result = await _deckServices.EditDeckAsync(request);
+            var (userEmail, error) = GetAuthenticatedUser();
+            var result = await _deckServices.EditDeckAsync(request, userEmail);
             
             return result.IsSuccess
                 ? StatusCode(result.StatusCode, result.Data)

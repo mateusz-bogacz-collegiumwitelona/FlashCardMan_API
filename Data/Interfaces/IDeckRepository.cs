@@ -12,5 +12,6 @@ namespace Data.Interfaces
         Task<bool> DeleteDeckAsync(Deck deck);
         Task<List<GetCardsForDeckResponse>> GetDeckCardsAsync(string token);
         Task<bool> IsDeckExist(string token);
+        Task<bool> IsHisDeck(Guid userId, string deckToken);
     }
 }

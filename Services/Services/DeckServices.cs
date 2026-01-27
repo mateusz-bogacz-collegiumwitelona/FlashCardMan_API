@@ -95,7 +95,7 @@ namespace Services.Services
             }
         }
 
-        public async Task<ResultHandler<string>> EditDeckAsync(EditDeckRequest request)
+        public async Task<ResultHandler<bool>> EditDeckAsync(EditDeckRequest request, string userEmail)
         {
             try
             {
@@ -103,15 +103,35 @@ namespace Services.Services
 
                 if (!isExist)
                 {
-                    return ResultHandler<string>.Failure(
+                    return ResultHandler<bool>.Failure(
                         "Deck not found.",
                         StatusCodes.Status404NotFound,
                         new List<string> { "DeckNotFound" });
                 }
 
+                var user = await _userManager.FindByEmailAsync(userEmail);
+
+                if (user == null)
+                {
+                    return ResultHandler<bool>.Failure(
+                        "User not foud",
+                        StatusCodes.Status404NotFound
+                        );
+                }
+
+                bool isHisDeck = await _deckRepo.IsHisDeck(user.Id, request.Token);
+
+                if (!isHisDeck)
+                {
+                    return ResultHandler<bool>.Failure(
+                        "User is no authorize to interact with this deck",
+                        StatusCodes.Status401Unauthorized
+                        );
+                }
+
                 if (string.IsNullOrEmpty(request.Name) && string.IsNullOrEmpty(request.Description))
                 {
-                    return ResultHandler<string>.Failure(
+                    return ResultHandler<bool>.Failure(
                         "No fields to update.",
                         StatusCodes.Status400BadRequest,
                         new List<string> { "NoUpdateFields" });
@@ -121,7 +141,7 @@ namespace Services.Services
 
                 if (request.Name == deck.Name && request.Description == deck.Description)
                 {
-                    return ResultHandler<string>.Failure(
+                    return ResultHandler<bool>.Failure(
                         "No changes detected.",
                         StatusCodes.Status400BadRequest,
                         new List<string> { "NoChangesDetected" });
@@ -131,20 +151,20 @@ namespace Services.Services
 
                 if (!result)
                 {
-                    return ResultHandler<string>.Failure(
+                    return ResultHandler<bool>.Failure(
                         "Failed to update deck.",
                         StatusCodes.Status500InternalServerError,
                         new List<string> { "CannotUpdateDeck" });
                 }
 
-                return ResultHandler<string>.Success(
+                return ResultHandler<bool>.Success(
                     "Deck updated successfully.",
                     StatusCodes.Status200OK,
-                    null);
+                    true);
             }
             catch (Exception ex)
             {
-                return ResultHandler<string>.Failure(
+                return ResultHandler<bool>.Failure(
                     "An error occurred while updating the deck.",
                     StatusCodes.Status500InternalServerError,
                     new List<string> { ex.Message });

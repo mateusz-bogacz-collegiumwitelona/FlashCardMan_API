@@ -8,7 +8,7 @@ namespace Services.Interfaces
     {
         Task<ResultHandler<string>> CreateDeckAsync(AddNewDeckRequest request, string userEmail);
         Task<ResultHandler<List<GetDeckResponse>>> GetAllDecksAsync(string userEmail);
-        Task<ResultHandler<string>> EditDeckAsync(EditDeckRequest request);
+        Task<ResultHandler<bool>> EditDeckAsync(EditDeckRequest request, string userEmail);
         Task<ResultHandler<string>> DeleteDeckAsync(string token);
         Task<ResultHandler<List<GetCardsForDeckResponse>>> GetDeckCardsAsync(string token);
     }
