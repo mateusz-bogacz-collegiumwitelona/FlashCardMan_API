@@ -1,5 +1,6 @@
 ﻿using Data.Models;
 using DTO.Request;
+using DTO.Response;
 
 namespace Data.Interfaces
 {

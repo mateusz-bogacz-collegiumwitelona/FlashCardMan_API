@@ -13,5 +13,6 @@ namespace Data.Interfaces
         Task<List<GetCardsForDeckResponse>> GetDeckCardsAsync(string token);
         Task<bool> IsDeckExist(string token);
         Task<bool> IsHisDeck(Guid userId, string deckToken);
+        Task<List<GetCardsForDeckResponse>> GetDueCardForDeckAsync(string token);
     }
 }

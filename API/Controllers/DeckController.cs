@@ -350,5 +350,26 @@ namespace API.Controllers
                    errors = result.Errors
                });
         }
+
+        [HttpGet("{token}/due-cards")]
+        public async Task<IActionResult> GetDueCardForDeckAsync([FromRoute] string token)
+        {
+            var (userEmail, error) = GetAuthenticatedUser();
+            var result = await _deckServices.GetDueCardForDeckAsync(token, userEmail);
+
+            return result.IsSuccess
+               ? StatusCode(result.StatusCode, new
+               {
+                   success = true,
+                   message = result.Message,
+                   data = result.Data
+               })
+               : StatusCode(result.StatusCode, new
+               {
+                   success = false,
+                   message = result.Message,
+                   errors = result.Errors
+               });
+        }
     }
 }

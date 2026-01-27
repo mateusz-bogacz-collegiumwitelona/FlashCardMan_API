@@ -227,7 +227,7 @@ namespace Services.Services
                     "Deck deleted successfully.",
                     StatusCodes.Status200OK,
                     true);
-            } 
+            }
             catch (Exception ex)
             {
                 return ResultHandler<bool>.Failure(
@@ -249,9 +249,9 @@ namespace Services.Services
                         new List<string> { "NoToken" });
                 }
 
-                bool isExist = await _deckRepo.IsDeckExist(token);
+                bool isDeckExist = await _deckRepo.IsDeckExist(token);
 
-                if (!isExist)
+                if (!isDeckExist)
                 {
                     return ResultHandler<List<GetCardsForDeckResponse>>.Failure(
                         "Deck not found.",
@@ -280,6 +280,72 @@ namespace Services.Services
                 }
 
                 var result = await _deckRepo.GetDeckCardsAsync(token);
+
+                if (result == null || !result.Any())
+                {
+                    return ResultHandler<List<GetCardsForDeckResponse>>.Failure(
+                        "Cards in deck not found.",
+                        StatusCodes.Status404NotFound,
+                        new List<string> { "CardsNotFound" });
+                }
+
+                return ResultHandler<List<GetCardsForDeckResponse>>.Success(
+                    "Carnd in deck reviewed successfuly.",
+                    StatusCodes.Status200OK,
+                    result);
+            }
+            catch (Exception ex)
+            {
+                return ResultHandler<List<GetCardsForDeckResponse>>.Failure(
+                    "An error occurred while updating the deck.",
+                    StatusCodes.Status500InternalServerError,
+                    new List<string> { ex.Message });
+            }
+        }
+
+        public async Task<ResultHandler<List<GetCardsForDeckResponse>>> GetDueCardForDeckAsync(string token, string userEmail)
+        {
+            try
+            {
+                if (string.IsNullOrEmpty(token))
+                {
+                    return ResultHandler<List<GetCardsForDeckResponse>>.Failure(
+                        "No token.",
+                        StatusCodes.Status400BadRequest,
+                        new List<string> { "NoToken" });
+                }
+
+                bool isDeckExist = await _deckRepo.IsDeckExist(token);
+
+                if (!isDeckExist)
+                {
+                    return ResultHandler<List<GetCardsForDeckResponse>>.Failure(
+                        "Deck not found.",
+                        StatusCodes.Status404NotFound,
+                        new List<string> { "DeckNotFound" });
+                }
+
+                var user = await _userManager.FindByEmailAsync(userEmail);
+
+                if (user == null)
+                {
+                    return ResultHandler<List<GetCardsForDeckResponse>>.Failure(
+                        "User not foud",
+                        StatusCodes.Status404NotFound
+                        );
+                }
+
+                bool isHisDeck = await _deckRepo.IsHisDeck(user.Id, token);
+
+                if (!isHisDeck)
+                {
+                    return ResultHandler<List<GetCardsForDeckResponse>>.Failure(
+                        "User is no authorize to interact with this deck",
+                        StatusCodes.Status401Unauthorized
+                        );
+                }
+
+                var result = await _deckRepo.GetDueCardForDeckAsync(token);
 
                 if (result == null || !result.Any())
                 {

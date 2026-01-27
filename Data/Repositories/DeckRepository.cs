@@ -4,6 +4,7 @@ using Data.Interfaces;
 using Data.Models;
 using DTO.Response;
 using Microsoft.EntityFrameworkCore;
+using System.Diagnostics;
 
 namespace Data.Repositories
 {
@@ -94,5 +95,20 @@ namespace Data.Repositories
 
         public async Task<bool> IsHisDeck(Guid userId, string deckToken)
             => await _dbContext.Decks.AnyAsync(d => d.Token == deckToken && d.User.Id == userId);
+
+        public async Task<List<GetCardsForDeckResponse>> GetDueCardForDeckAsync(string token)
+             => await _dbContext.FlashCards
+                .Include(fc => fc.Deck)
+                .Where(fc => fc.Deck.Token == token && fc.NextReviewAt <= DateTime.UtcNow)
+                .OrderBy(fc => fc.NextReviewAt)
+                .Select(fc => new GetCardsForDeckResponse
+                {
+                    Question = fc.Question,
+                    Answer = fc.Answer,
+                    CreatedAt = fc.CreatedAt,
+                    UpdatedAt = fc.UpdatedAt,
+                    Token = fc.Token
+                })
+                .ToListAsync();
     }
 }
