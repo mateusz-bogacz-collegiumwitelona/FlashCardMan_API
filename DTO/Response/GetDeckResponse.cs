@@ -10,6 +10,6 @@ namespace DTO.Response
     {
         public string Name { get; set; }
         public string Description { get; set; }
-        public string Token { get; set; }
+        public string DeckToken { get; set; }
     }
 }

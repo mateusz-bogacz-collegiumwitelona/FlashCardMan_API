@@ -42,7 +42,7 @@ namespace Data.Repositories
                     {
                         Name = d.Name,
                         Description = d.Description ?? null,
-                        Token = d.Token
+                        DeckToken = d.Token
                     }).ToListAsync();
 
 
@@ -86,7 +86,7 @@ namespace Data.Repositories
                     Answer = fc.Answer,
                     CreatedAt = fc.CreatedAt,
                     UpdatedAt = fc.UpdatedAt,
-                    Token = fc.Token
+                    CardToken= fc.Token
                 }))
             .ToListAsync();
 
@@ -107,8 +107,75 @@ namespace Data.Repositories
                     Answer = fc.Answer,
                     CreatedAt = fc.CreatedAt,
                     UpdatedAt = fc.UpdatedAt,
-                    Token = fc.Token
+                    CardToken = fc.Token
                 })
                 .ToListAsync();
+
+        public async Task<GetDeckJsonResponse?> GetDeckToJsonAsync(string deckToken)
+            => await _dbContext.Decks
+                .Where(d => d.Token == deckToken)
+                .Select(d => new GetDeckJsonResponse
+                {
+                    Name = d.Name,
+                    Description = d.Description ?? $"{DateTime.UtcNow}",
+                    Cards = d.FlashCards
+                        .Select(fc => new GetCardJsonResponse
+                        {
+                            Question = fc.Question,
+                            Answer = fc.Answer
+                        })
+                        .ToList()
+                })
+                .FirstOrDefaultAsync();
+
+        public async Task<bool> ImportDeckFromJson(GetDeckJsonResponse request, ApplicationUser user)
+        {
+            using var transaction = await _dbContext.Database.BeginTransactionAsync();
+            
+            try
+            {
+                Guid deckId = Guid.NewGuid();
+
+                var newDeck = new Deck
+                {
+                    Id = deckId,
+                    Name = request.Name,
+                    CreatedAt = DateTime.UtcNow,
+                    UpdatedAt = DateTime.UtcNow,
+                    Description = request.Description ?? null,
+                    User = user,
+                    Token = GenerateToken()
+                };
+
+                await _dbContext.Decks.AddAsync(newDeck);
+
+                var flashcards = request.Cards.Select(card => new FlashCards
+                {
+                    Id = Guid.NewGuid(),
+                    Question = card.Question,
+                    Answer = card.Answer,
+                    CreatedAt = DateTime.UtcNow,
+                    UpdatedAt = DateTime.UtcNow,
+                    DeckId = deckId,
+                    Token = GenerateToken(),
+                    NextReviewAt = DateTime.UtcNow,
+                    Repetitions = 0,
+                    EasinessFactor = 2.5,
+                    IntervalDays = 0
+                });
+
+                await _dbContext.FlashCards.AddRangeAsync(flashcards);
+
+                var result = await _dbContext.SaveChangesAsync();
+                await transaction.CommitAsync();
+
+                return result > 0;
+            }
+            catch (Exception ex)
+            {
+                await transaction.RollbackAsync();
+                return false;
+            }
+        }
     }
 }

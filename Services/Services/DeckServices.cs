@@ -3,9 +3,14 @@ using Data.Models;
 using DTO.Request;
 using DTO.Response;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Mvc;
+using NpgsqlTypes;
 using Services.Helpers;
 using Services.Interfaces;
+using System.Text;
+using System.Text.Json;
 
 namespace Services.Services
 {
@@ -364,6 +369,128 @@ namespace Services.Services
             {
                 return ResultHandler<List<GetCardsForDeckResponse>>.Failure(
                     "An error occurred while updating the deck.",
+                    StatusCodes.Status500InternalServerError,
+                    new List<string> { ex.Message });
+            }
+        }
+
+        public async Task<ResultHandler<FileContentResult>> GetDeckToJsonAsync(string deckToken)
+        {
+            try
+            {
+                var isExist = await _deckRepo.IsDeckExist(deckToken);
+
+                if (!isExist)
+                {
+                    return ResultHandler<FileContentResult>.Failure(
+                        "Deck not found.",
+                        StatusCodes.Status404NotFound,
+                        new List<string> { "DeckNotFound" });
+                }
+
+                var data = await _deckRepo.GetDeckToJsonAsync(deckToken);
+
+                if (data == null)
+                {
+                    return ResultHandler<FileContentResult>.Failure(
+                        "Failed to export deck.",
+                        StatusCodes.Status500InternalServerError,
+                        new List<string> { "CannotExportDeck" });
+                }
+
+                var json = JsonSerializer.Serialize(data, new JsonSerializerOptions
+                {
+                    WriteIndented = true
+                });
+
+                var file = new FileContentResult(
+                    Encoding.UTF8.GetBytes(json),
+                    "application/json")
+                {
+                    FileDownloadName = $"{data.Name}.json"
+                };
+
+                return ResultHandler<FileContentResult>.Success(
+                    "Deck exported successfully.",
+                    StatusCodes.Status200OK,
+                    file);
+            }
+            catch (Exception ex)
+            {
+                return ResultHandler<FileContentResult>.Failure(
+                    "An error occurred while exporting the deck.",
+                    StatusCodes.Status500InternalServerError,
+                    new List<string> { ex.Message });
+            }
+        }
+
+        public async Task<ResultHandler<bool>> ImportDeckFromJson(IFormFile file, string userEmail)
+        {
+            try
+            {
+                if (file == null || file.Length == 0)
+                    return ResultHandler<bool>.Failure(
+                        "Invalid JSON file.",
+                        StatusCodes.Status400BadRequest
+                        );
+
+                using var stream = file.OpenReadStream();
+
+                var request = await JsonSerializer.DeserializeAsync<GetDeckJsonResponse>(stream, new JsonSerializerOptions
+                {
+                    PropertyNameCaseInsensitive = true
+                });
+
+                if (request == null)
+                    return ResultHandler<bool>.Failure(
+                        "Invalid JSON file.", 
+                        StatusCodes.Status400BadRequest
+                        );
+
+                if (string.IsNullOrWhiteSpace(request.Name))
+                    return ResultHandler<bool>.Failure(
+                        "Deck name is required.", 
+                        StatusCodes.Status400BadRequest
+                        );
+
+                if (request.Cards == null || !request.Cards.Any())
+                    return ResultHandler<bool>.Failure(
+                        "Deck must contain at least one card.", 
+                        StatusCodes.Status400BadRequest
+                        );
+
+                var user = await _userManager.FindByEmailAsync(userEmail);
+
+                if (user == null)
+                    return ResultHandler<bool>.Failure(
+                        "User not foud",
+                        StatusCodes.Status404NotFound
+                        );
+
+                var result = await _deckRepo.ImportDeckFromJson(request, user);
+
+                if (!result)
+                    return ResultHandler<bool>.Failure(
+                        "Failed to import deck.",
+                        StatusCodes.Status500InternalServerError,
+                        new List<string> { "CannotImportDeck" });
+
+                return ResultHandler<bool>.Success(
+                    "Deck import successfuly.",
+                    StatusCodes.Status200OK,
+                    result);
+            }
+            catch (JsonException jex)
+            {
+                return ResultHandler<bool>.Failure(
+                    "An error occurred while importing the deck.",
+                    StatusCodes.Status500InternalServerError,
+                    new List<string> { jex.Message });
+            }
+            catch (Exception ex)
+            {
+                return ResultHandler<bool>.Failure(
+                    "An error occurred while importing the deck.",
                     StatusCodes.Status500InternalServerError,
                     new List<string> { ex.Message });
             }

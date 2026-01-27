@@ -14,5 +14,7 @@ namespace Data.Interfaces
         Task<bool> IsDeckExist(string token);
         Task<bool> IsHisDeck(Guid userId, string deckToken);
         Task<List<GetCardsForDeckResponse>> GetDueCardForDeckAsync(string token);
+        Task<GetDeckJsonResponse?> GetDeckToJsonAsync(string deckToken);
+        Task<bool> ImportDeckFromJson(GetDeckJsonResponse request, ApplicationUser user);
     }
 }

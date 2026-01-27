@@ -462,5 +462,140 @@ namespace API.Controllers
                    errors = result.Errors
                });
         }
+
+        /// <summary>
+        /// Exports a flashcard deck as a downloadable JSON file.
+        /// </summary>
+        /// <remarks>
+        /// Generates a JSON file containing deck metadata and all flashcards
+        /// associated with the provided deck token.  
+        /// The exported file includes the deck name, description, and a list of cards
+        /// with their questions and answers.
+        /// 
+        /// The user must be authenticated and must be the owner of the deck.
+        /// The response is returned as a file download with the
+        /// <c>application/json</c> content type.
+        /// 
+        /// Example successful request:
+        /// ```
+        /// GET /api/deck/export?deckToken=5zbqgVtplir225hqMHkLYQ
+        /// ```
+        ///
+        /// Example success response (200 OK – file download):
+        /// ```json
+        /// {
+        ///   "name": "My Flashcards Deck",
+        ///   "description": "Deck for daily vocabulary practice",
+        ///   "cards": [
+        ///     {
+        ///       "question": "What is dependency injection?",
+        ///       "answer": "A design pattern used to implement IoC."
+        ///     },
+        ///     {
+        ///       "question": "What is ASP.NET Core?",
+        ///       "answer": "A cross-platform framework for building web APIs."
+        ///     }
+        ///   ]
+        /// }
+        /// ```
+        ///
+        /// Example error request (Unauthorized access – 401 Unauthorized):
+        /// ```
+        /// GET /api/deck/export?deckToken=NOT_MY_DECK_TOKEN
+        /// ```
+        ///
+        /// Example error response (401 Unauthorized):
+        /// ```json
+        /// {
+        ///   "success": false,
+        ///   "message": "User is not authorized to export this deck.",
+        ///   "errors": null
+        /// }
+        /// ```
+        ///
+        /// Example error request (deck not found – 404 Not Found):
+        /// ```
+        /// GET /api/deck/export?deckToken=INVALID_TOKEN
+        /// ```
+        ///
+        /// Example error response (404 Not Found):
+        /// ```json
+        /// {
+        ///   "success": false,
+        ///   "message": "Deck not found.",
+        ///   "errors": [
+        ///     "DeckNotFound"
+        ///   ]
+        /// }
+        /// ```
+        ///
+        /// Example error response (500 Internal Server Error):
+        /// ```json
+        /// {
+        ///   "success": false,
+        ///   "message": "An error occurred while exporting the deck.",
+        ///   "errors": [
+        ///     "CannotExportDeck"
+        ///   ]
+        /// }
+        /// ```
+        /// </remarks>
+        /// <param name="deckToken">
+        /// The unique token of the deck to export (passed as a query parameter).
+        /// </param>
+        /// <returns>
+        /// A downloadable JSON file containing the exported deck data,
+        /// or an error response if the export fails.
+        /// </returns>
+        /// <response code="200">The deck was successfully exported and returned as a JSON file.</response>
+        /// <response code="400">The deckToken query parameter was missing or empty.</response>
+        /// <response code="401">The authenticated user is not authorized to export this deck.</response>
+        /// <response code="404">The deck with the provided token does not exist.</response>
+        /// <response code="500">An internal server error occurred while exporting the deck.</response>
+        [Produces("application/json")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+        [HttpGet("export")]
+        public async Task<IActionResult> GetDeckToJsonAsync([FromQuery] string deckToken)
+        {
+            var result = await _deckServices.GetDeckToJsonAsync(deckToken);
+            if (!result.IsSuccess)
+            {
+                return StatusCode(result.StatusCode, new
+                {
+                    success = false,
+                    message = result.Message,
+                    errors = result.Errors
+                });
+            }
+
+            return result.Data!;
+        }
+
+        [Consumes("multipart/form-data")]
+        [HttpPost("import")]
+        public async Task<IActionResult> ImportDeckFromJson(IFormFile file)
+        {
+            var (userEmail, error) = GetAuthenticatedUser();
+
+            var result = await _deckServices.ImportDeckFromJson(file, userEmail);
+
+            return result.IsSuccess
+               ? StatusCode(result.StatusCode, new
+               {
+                   success = true,
+                   message = result.Message,
+                   data = result.Data
+               })
+               : StatusCode(result.StatusCode, new
+               {
+                   success = false,
+                   message = result.Message,
+                   errors = result.Errors
+               });
+        }
     }
 }
