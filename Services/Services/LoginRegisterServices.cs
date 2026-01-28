@@ -243,12 +243,10 @@ namespace Services.Services
                 string defaultRole = "User";
 
                 if (!await _roleManager.RoleExistsAsync(defaultRole))
-                {
                     return ResultHandler<IdentityResult>.Failure(
                         $"Default role '{defaultRole}' does not exist.",
                         StatusCodes.Status500InternalServerError
                     );
-                }
 
                 var addToRole = await _userManager.AddToRoleAsync(user, defaultRole);
 
@@ -262,14 +260,12 @@ namespace Services.Services
                 var confirmationToken = await _userManager.GenerateEmailConfirmationTokenAsync(user);
 
                 if (string.IsNullOrEmpty(confirmationToken))
-                {
                     return ResultHandler<IdentityResult>.Failure(
                         "Failed to generate email confirmation token.",
                         StatusCodes.Status500InternalServerError
                     );
-                }
 
-                await _eventDispatcher.PublishAsync(new UserRegisteredEvent(user, confirmationToken));
+                await _eventDispatcher.PublishAsync(new UserEvent(user, confirmationToken));
 
                 return ResultHandler<IdentityResult>.Success(
                     "User registered successfully. Please check your email to confirm your account.",
@@ -293,31 +289,25 @@ namespace Services.Services
                 var user = await _userManager.FindByEmailAsync(request.Email);
 
                 if (user == null)
-                {
                     return ResultHandler<IdentityResult>.Failure(
                         "User not found.",
                         StatusCodes.Status404NotFound
                         );
-                }
 
                 if (user.EmailConfirmed)
-                {
                     return ResultHandler<IdentityResult>.Failure(
                         "Email is already confirmed.",
                         StatusCodes.Status400BadRequest
                         );
-                }
 
                 var result = await _userManager.ConfirmEmailAsync(user, request.Token);
 
                 if (!result.Succeeded)
-                {
                     return ResultHandler<IdentityResult>.Failure(
                         "Email confirmation failed.",
                         StatusCodes.Status500InternalServerError,
                         result.Errors.Select(e => e.Description).ToList()
                         );
-                }
 
                 return ResultHandler<IdentityResult>.Success(
                     "Email confirmed successfully.",
@@ -328,6 +318,93 @@ namespace Services.Services
             {
                 return ResultHandler<IdentityResult>.Failure(
                     "An error occurred during email confirmation.",
+                    StatusCodes.Status500InternalServerError,
+                    new List<string> { ex.Message }
+                    );
+            }
+        }
+
+        public async Task<ResultHandler<IdentityResult>> ForgotPasswordAsync(string email)
+        {
+            try
+            {
+                var user = await _userManager.FindByEmailAsync(email);
+
+                if (user == null)
+                    return ResultHandler<IdentityResult>.Failure(
+                        "User not found",
+                        StatusCodes.Status404NotFound
+                        );
+
+                if (!user.EmailConfirmed)
+                    return ResultHandler<IdentityResult>.Failure(
+                        "Email cannot confirmed",
+                        StatusCodes.Status400BadRequest
+                    );
+
+                string token = await _userManager.GeneratePasswordResetTokenAsync(user);
+
+                if (string.IsNullOrEmpty(token))
+                    return ResultHandler<IdentityResult>.Failure(
+                        "Failed to generate password reset token.",
+                        StatusCodes.Status500InternalServerError
+                    );
+
+                await _eventDispatcher.PublishAsync(new UserEvent(user, token));
+
+                return ResultHandler<IdentityResult>.Success(
+                    "Send link to reset password. Please check your email to confirm your account.",
+                    StatusCodes.Status201Created
+                    );
+            }
+            catch (Exception ex)
+            {
+                return ResultHandler<IdentityResult>.Failure(
+                    "An error occurred during password reset.",
+                    StatusCodes.Status500InternalServerError,
+                    new List<string> { ex.Message }
+                    );
+            }
+        }
+
+        public async Task<ResultHandler<IdentityResult>> ResetPasswordAsync(ResetPasswordRequest request)
+        {
+            try
+            {
+                var user = await _userManager.FindByEmailAsync(request.Email);
+
+                if (user == null)
+                    return ResultHandler<IdentityResult>.Failure(
+                        "User not found",
+                        StatusCodes.Status404NotFound
+                        );
+
+                if (!user.EmailConfirmed)
+                    return ResultHandler<IdentityResult>.Failure(
+                        "Email cannot confirmed",
+                        StatusCodes.Status400BadRequest
+                    );
+
+                var decodedToken = Uri.UnescapeDataString(request.Token);
+                var result = await _userManager.ResetPasswordAsync(user, decodedToken, request.Password);
+
+                if (!result.Succeeded)
+                    return ResultHandler<IdentityResult>.Failure(
+                        "Password reset failed.",
+                        StatusCodes.Status500InternalServerError,
+                        result.Errors.Select(e => e.Description).ToList()
+                        );
+
+                return ResultHandler<IdentityResult>.Success(
+                    "Password reset successfully. You can now log in with your new password.",
+                    StatusCodes.Status200OK,
+                    result
+                    );
+            }
+            catch (Exception ex)
+            {
+                return ResultHandler<IdentityResult>.Failure(
+                    "An error occurred during password reset.",
                     StatusCodes.Status500InternalServerError,
                     new List<string> { ex.Message }
                     );

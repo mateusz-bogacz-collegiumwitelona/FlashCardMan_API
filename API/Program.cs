@@ -226,7 +226,8 @@ builder.Services.AddHostedService<EmailBackgroundWorker>();
 builder.Services.AddTransient<IEventDispatcher, EventDispatcher>();
 
 //register observers
-builder.Services.AddTransient<IEventHandler<UserRegisteredEvent>, SendRegistrationEmailHandler>();
+builder.Services.AddTransient<IEventHandler<UserEvent>, SendRegistrationEmailHandler>();
+builder.Services.AddTransient<IEventHandler<UserEvent>, SendResetPasswordEmailHandler>();
 
 
 var app = builder.Build();
