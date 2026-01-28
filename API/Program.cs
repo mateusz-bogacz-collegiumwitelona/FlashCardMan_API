@@ -205,11 +205,13 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
 builder.Services.AddScoped<IDeckRepository, DeckRepository>();
 builder.Services.AddScoped<IFlashCardRepo, FlashCardRepo>();
 builder.Services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
+builder.Services.AddScoped<ITagsRepo, TagsRepo>();
 
 //register services
 builder.Services.AddScoped<IDeckServices, DeckServices>();
 builder.Services.AddScoped<IFlashCardService, FlashCardService>();
 builder.Services.AddScoped<ILoginRegisterServices, LoginRegisterServices>();
+builder.Services.AddScoped<ITagsServices, TagsServices>();
 
 //register queue
 builder.Services.AddSingleton<IEmailQueue, EmailQueue>();
