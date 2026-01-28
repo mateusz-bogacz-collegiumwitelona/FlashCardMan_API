@@ -80,13 +80,20 @@ namespace Data.Repositories
             => await _dbContext.Decks
                 .Where(d => d.Token == token)
                 .Include(d => d.FlashCards)
+                    .ThenInclude(fc => fc.FlashCardTags)
+                        .ThenInclude(fct => fct.Tag)
                 .SelectMany(d => d.FlashCards.Select(fc => new GetCardsForDeckResponse
                 {
                     Question = fc.Question,
                     Answer = fc.Answer,
                     CreatedAt = fc.CreatedAt,
                     UpdatedAt = fc.UpdatedAt,
-                    CardToken= fc.Token
+                    CardToken= fc.Token,
+                    Tags = fc.FlashCardTags.Select(fct => new GetTagsResponse
+                    {
+                        Tag = fct.Tag.Tag,
+                        TagToken = fct.Tag.Token
+                    }).ToList()
                 }))
             .ToListAsync();
 
@@ -99,6 +106,8 @@ namespace Data.Repositories
         public async Task<List<GetCardsForDeckResponse>> GetDueCardForDeckAsync(string token)
              => await _dbContext.FlashCards
                 .Include(fc => fc.Deck)
+                .Include(fc => fc.FlashCardTags)
+                    .ThenInclude(fct => fct.Tag)
                 .Where(fc => fc.Deck.Token == token && fc.NextReviewAt <= DateTime.UtcNow)
                 .OrderBy(fc => fc.NextReviewAt)
                 .Select(fc => new GetCardsForDeckResponse
@@ -107,7 +116,12 @@ namespace Data.Repositories
                     Answer = fc.Answer,
                     CreatedAt = fc.CreatedAt,
                     UpdatedAt = fc.UpdatedAt,
-                    CardToken = fc.Token
+                    CardToken = fc.Token,
+                    Tags = fc.FlashCardTags.Select(fct => new GetTagsResponse
+                    {
+                        Tag = fct.Tag.Tag,
+                        TagToken = fct.Tag.Token
+                    }).ToList()
                 })
                 .ToListAsync();
 

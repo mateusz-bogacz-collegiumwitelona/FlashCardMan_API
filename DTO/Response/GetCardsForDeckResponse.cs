@@ -7,5 +7,6 @@
         public DateTime CreatedAt { get; set; }
         public DateTime UpdatedAt { get; set; }
         public string CardToken { get; set; }
+        public List<GetTagsResponse> Tags { get; set; } = new();
     }
 }
