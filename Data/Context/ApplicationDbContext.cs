@@ -13,6 +13,7 @@ namespace Data.Context
         public DbSet<Deck> Decks { get; set; }
         public DbSet<ApplicationUser> Users { get; set; }
         public DbSet<RefreshToken> RefreshTokens { get; set; }
+        public DbSet<Tags> Tags { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -40,6 +41,13 @@ namespace Data.Context
                       .HasForeignKey(e => e.UserId)
                       .OnDelete(DeleteBehavior.Cascade);
             });
+
+            modelBuilder.Entity<Tags>()
+                .HasOne(t => t.Card)
+                .WithMany(c => c.Tags)
+                .HasForeignKey(t => t.CardId)
+                .IsRequired(false)
+                .OnDelete(DeleteBehavior.Cascade);
         }
     }
 }
