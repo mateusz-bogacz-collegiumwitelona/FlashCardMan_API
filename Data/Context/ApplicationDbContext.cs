@@ -14,6 +14,7 @@ namespace Data.Context
         public DbSet<ApplicationUser> Users { get; set; }
         public DbSet<RefreshToken> RefreshTokens { get; set; }
         public DbSet<Tags> Tags { get; set; }
+        public DbSet<FlashCardTag> FlashCardTag { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -42,12 +43,18 @@ namespace Data.Context
                       .OnDelete(DeleteBehavior.Cascade);
             });
 
-            modelBuilder.Entity<Tags>()
-                .HasOne(t => t.Card)
-                .WithMany(c => c.Tags)
-                .HasForeignKey(t => t.CardId)
-                .IsRequired(false)
-                .OnDelete(DeleteBehavior.Cascade);
+            modelBuilder.Entity<FlashCardTag>()
+                .HasKey(x => new { x.FlashCardId, x.TagId });
+
+            modelBuilder.Entity<FlashCardTag>()
+                .HasOne(x => x.FlashCard)
+                .WithMany(x => x.FlashCardTags)
+                .HasForeignKey(x => x.FlashCardId);
+
+            modelBuilder.Entity<FlashCardTag>()
+                .HasOne(x => x.Tag)
+                .WithMany(x => x.FlashCardTags)
+                .HasForeignKey(x => x.TagId);
         }
     }
 }

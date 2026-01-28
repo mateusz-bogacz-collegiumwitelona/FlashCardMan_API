@@ -17,7 +17,7 @@
         public double EasinessFactor { get; set; }
         public int IntervalDays { get; set; }
 
-        public ICollection<Tags> Tags { get; set; } = new List<Tags>();
+        public ICollection<FlashCardTag> FlashCardTags { get; set; } = new List<FlashCardTag>();
 
     }
 }

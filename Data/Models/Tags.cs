@@ -7,7 +7,6 @@
         public DateTime CreatedAt { get; set; }
         public DateTime? UpdatedAt { get; set; }
         public string Token { get; set; }
-        public Guid? CardId { get; set; }
-        public FlashCards? Card { get; set; }
+        public ICollection<FlashCardTag> FlashCardTags { get; set; } = new List<FlashCardTag>();
     }
 }

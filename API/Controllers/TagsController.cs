@@ -18,9 +18,9 @@ namespace API.Controllers
         }
 
         [HttpPost("add")]
-        public async Task<IActionResult> AddNewTag([FromQuery] string name)
+        public async Task<IActionResult> AddNewTag([FromQuery] string token, [FromQuery] string name)
         {
-            var result = await _tagsServices.AddNewTagAsync(name);
+            var result = await _tagsServices.AddTagToTokenIfNew(name, token);
 
             return result.IsSuccess
                ? StatusCode(result.StatusCode, new

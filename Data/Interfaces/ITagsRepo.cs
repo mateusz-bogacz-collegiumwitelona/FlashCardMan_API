@@ -2,6 +2,7 @@
 {
     public interface ITagsRepo
     {
-        Task<bool> AddNewTagAsync(string name);
+        Task<bool> AddTagToTokenIfNew(string name, Guid cardId);
+        Task<bool> IsCardHaveThisTag(Guid cardId, string name);
     }
 }

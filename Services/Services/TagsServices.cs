@@ -13,13 +13,15 @@ namespace Services.Services
     public class TagsServices : ITagsServices
     {
         private readonly ITagsRepo _tagsRepo;
+        private readonly IFlashCardRepo _flashCardRepo;
 
-        public TagsServices(ITagsRepo tagsRepo)
+        public TagsServices(ITagsRepo tagsRepo, IFlashCardRepo flashCardRepo)
         {
             _tagsRepo = tagsRepo;
+            _flashCardRepo = flashCardRepo;
         }
 
-        public async Task<ResultHandler<bool>> AddNewTagAsync(string name)
+        public async Task<ResultHandler<bool>> AddTagToTokenIfNew(string name, string cardToken)
         {
             try
             {
@@ -29,20 +31,35 @@ namespace Services.Services
                         StatusCodes.Status400BadRequest,
                         new List<string> { "InvalidTagName" });
 
-                var result = await _tagsRepo.AddNewTagAsync(name);
-
-                if (!result)
+               var card = await _flashCardRepo.GetCardByTokenAsync(cardToken);
+                if (card == null)
                 {
                     return ResultHandler<bool>.Failure(
-                        "Failed to add new tag.",
+                        "Flash card not found.",
+                        StatusCodes.Status404NotFound,
+                        new List<string> { "FlashCardNotFound" });
+                }
+
+                bool isTagExist = await _tagsRepo.IsCardHaveThisTag(card.Id, name);
+
+                if (isTagExist) 
+                    return ResultHandler<bool>.Failure(
+                        "The flash card already has this tag.",
+                        StatusCodes.Status409Conflict,
+                        new List<string> { "TagAlreadyExists" });
+
+                var resutl = await _tagsRepo.AddTagToTokenIfNew(name, card.Id);
+
+                if (!resutl)
+                    return ResultHandler<bool>.Failure(
+                        "Failed to add the tag to the flash card.",
                         StatusCodes.Status500InternalServerError,
                         new List<string> { "AddTagFailed" });
-                }
 
                 return ResultHandler<bool>.Success(
                     "Tag added successfully.",
                     StatusCodes.Status200OK,
-                    true);
+                    resutl);
             }
             catch (Exception ex)
             {
