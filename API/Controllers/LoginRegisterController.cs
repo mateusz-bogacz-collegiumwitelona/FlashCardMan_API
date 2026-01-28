@@ -345,6 +345,10 @@ namespace API.Controllers
         /// <response code="400">Email is not confirmed</response>
         /// <response code="404">User not found</response>
         /// <response code="500">Internal server error</response>
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         [AllowAnonymous]
         [HttpPost("reset-password")]
         public async Task<IActionResult> ForgotPasswordAsync(string email)
@@ -390,6 +394,14 @@ namespace API.Controllers
         /// The token must be the one received via email from the reset-password endpoint.
         /// Token expires after 24 hours.
         /// </remarks>
+        /// <response code="200">Password reset successfully</response>
+        /// <response code="400">Email is not confirmed</response>
+        /// <response code="404">User not found</response>
+        /// <response code="500">Internal server error</response>
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         [AllowAnonymous]
         [HttpPost("set-new-password")]
         public async Task<IActionResult> ResetPasswordAsync([FromBody] ResetPasswordRequest request)
