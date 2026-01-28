@@ -167,27 +167,66 @@ namespace Data.Repositories
 
                 await _dbContext.Decks.AddAsync(newDeck);
 
-                var flashcards = request.Cards.Select(card => new FlashCards
+                var normalizedTags = request.Cards
+                    .SelectMany(c => c.Tags ?? Enumerable.Empty<string>())
+                    .Select(t => t.Trim().ToLower())
+                    .Distinct()
+                    .ToList();
+
+                var deckTags = normalizedTags.Select(name => new Tags
                 {
                     Id = Guid.NewGuid(),
-                    Question = card.Question,
-                    Answer = card.Answer,
-                    CreatedAt = DateTime.UtcNow,
-                    UpdatedAt = DateTime.UtcNow,
-                    DeckId = deckId,
+                    Tag = name,
                     Token = GenerateToken(),
-                    NextReviewAt = DateTime.UtcNow,
-                    Repetitions = 0,
-                    EasinessFactor = 2.5,
-                    IntervalDays = 0
-                });
+                    CreatedAt = DateTime.UtcNow
+                }).ToList();
 
-                await _dbContext.FlashCards.AddRangeAsync(flashcards);
+                await _dbContext.Tags.AddRangeAsync(deckTags);
 
-                var result = await _dbContext.SaveChangesAsync();
+                var tagDict = deckTags.ToDictionary(t => t.Tag, t => t);
+
+                var flashCards = new List<FlashCards>();
+                var flashCardTags = new List<FlashCardTag>();
+
+                foreach (var card in request.Cards)
+                {
+                    var flashCard = new FlashCards
+                    {
+                        Id = Guid.NewGuid(),
+                        Question = card.Question,
+                        Answer = card.Answer,
+                        CreatedAt = DateTime.UtcNow,
+                        UpdatedAt = DateTime.UtcNow,
+                        DeckId = deckId,
+                        Token = GenerateToken(),
+                        NextReviewAt = DateTime.UtcNow,
+                        Repetitions = 0,
+                        EasinessFactor = 2.5,
+                        IntervalDays = 0
+                    };
+
+                    flashCards.Add(flashCard);
+
+                    foreach (var tagName in card.Tags ?? Enumerable.Empty<string>())
+                    {
+                        var normalized = tagName.Trim().ToLower();
+                        var tag = tagDict[normalized];
+
+                        flashCardTags.Add(new FlashCardTag
+                        {
+                            FlashCardId = flashCard.Id,
+                            TagId = tag.Id
+                        });
+                    }
+                }
+
+                await _dbContext.FlashCards.AddRangeAsync(flashCards);
+                await _dbContext.FlashCardTag.AddRangeAsync(flashCardTags);
+
+                await _dbContext.SaveChangesAsync();
                 await transaction.CommitAsync();
 
-                return result > 0;
+                return true;
             }
             catch (Exception ex)
             {
