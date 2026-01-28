@@ -136,9 +136,13 @@ namespace Data.Repositories
                         .Select(fc => new GetCardJsonResponse
                         {
                             Question = fc.Question,
-                            Answer = fc.Answer
+                            Answer = fc.Answer,
+                            Tags = fc.FlashCardTags
+                                        .Select(fct => fct.Tag.Tag)
+                                        .ToList()
                         })
-                        .ToList()
+                        .ToList(),
+                    
                 })
                 .FirstOrDefaultAsync();
 
